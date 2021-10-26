@@ -100,9 +100,20 @@ void FreshWaterAudioProcessor::prepareToPlay (double sampleRate, int samplesPerB
     
     compressor.prepare(spec);
     
-    
+    // Get apvts Values
+    auto attack =  dynamic_cast<juce::AudioParameterFloat*>(apvts.getParameter("Attack"))->get();
+    auto release =  dynamic_cast<juce::AudioParameterFloat*>(apvts.getParameter("Release"))->get();
+    auto threshold = dynamic_cast<juce::AudioParameterFloat*>(apvts.getParameter("Threshold"))->get();
+    auto ratio =  dynamic_cast<juce::AudioParameterChoice*>(apvts.getParameter("Ratio"))->getCurrentChoiceName().getFloatValue();
+    compressor.setAttack(attack);
+    compressor.setRelease(release);
+    compressor.setThreshold(threshold);
+    compressor.setRatio(ratio);
+
     gain.prepare(spec);
-    gain.setGainLinear(0.5);
+    auto gainParam = dynamic_cast<juce::AudioParameterFloat*>(apvts.getParameter("Gain"))->get();
+    gain.setGainLinear(gainParam);
+    
 }
 
 void FreshWaterAudioProcessor::releaseResources()
@@ -153,8 +164,20 @@ void FreshWaterAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
         buffer.clear (i, 0, buffer.getNumSamples());
 
     // Get Value from APVTS
-    gain.setGainLinear(apvts.getRawParameterValue("Gain")->load());
     
+    auto attack =  dynamic_cast<juce::AudioParameterFloat*>(apvts.getParameter("Attack"))->get();
+    auto release =  dynamic_cast<juce::AudioParameterFloat*>(apvts.getParameter("Release"))->get();
+    auto threshold = dynamic_cast<juce::AudioParameterFloat*>(apvts.getParameter("Threshold"))->get();
+    auto ratio =  dynamic_cast<juce::AudioParameterChoice*>(apvts.getParameter("Ratio"))->getCurrentChoiceName().getFloatValue();
+    
+    auto gainParam = dynamic_cast<juce::AudioParameterFloat*>(apvts.getParameter("Gain"))->get();
+    
+    compressor.setAttack(attack);
+    compressor.setRelease(release);
+    compressor.setThreshold(threshold);
+    compressor.setRatio(ratio);
+    
+    gain.setGainLinear(gainParam);
     
     juce::dsp::AudioBlock<float> block (buffer);
     juce::dsp::ProcessContextReplacing<float> context (block);
@@ -195,7 +218,30 @@ juce::AudioProcessorValueTreeState::ParameterLayout FreshWaterAudioProcessor::cr
     juce::AudioProcessorValueTreeState::ParameterLayout layout;
     
     
+    layout.add(std::make_unique<juce::AudioParameterFloat>("Attack",
+                                                           "Attack",
+                                                           juce::NormalisableRange<float>(10.f, 500.f, 1.f, 1.f),
+                                                           50.f));
+    layout.add(std::make_unique<juce::AudioParameterFloat>("Release",
+                                                           "Release",
+                                                           juce::NormalisableRange<float>(10.f, 500.f, 1.f, 1.f),
+                                                           100.f));
+    layout.add(std::make_unique<juce::AudioParameterFloat>("Threshold",
+                                                           "Threshold",
+                                                           juce::NormalisableRange<float>(-48.f, 24.f, 1.f, 1.f),
+                                                           0.f));
     
+    juce::StringArray strArray;
+    std::vector<double> threshVec = {1.0, 1.5, 2.0, 3.0, 4.0, 5.0, 10.0, 20.0, 50.0, 100.0};
+    for (auto thresh : threshVec)
+    {
+        strArray.add(juce::String(thresh));
+    }
+    
+    layout.add(std::make_unique<juce::AudioParameterChoice>("Ratio",
+                                                            "Ratio",
+                                                            strArray,
+                                                            2));
     
     layout.add(std::make_unique<juce::AudioParameterFloat>("Gain",
                                                            "Gain",
