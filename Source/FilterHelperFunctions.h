@@ -24,3 +24,6 @@ juce::String getCompReleaseParamName();
 juce::String getCompThresholdParamName();
 juce::String getCompRatioParamName();
 juce::String getCompBypassParamName();
+
+juce::String getInputGainParamName();
+juce::String getOutputGainParamName();

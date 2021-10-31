@@ -83,3 +83,20 @@ juce::String getCompBypassParamName()
 {
     return getCompParamPrefix("Bypassed");
 }
+
+// Gains
+juce::String getInputGainParamName()
+{
+    juce::String str;
+    str << "InputGain_DB";
+    
+    return str;
+}
+
+juce::String getOutputGainParamName()
+{
+    juce::String str;
+    str << "OutputGain_DB";
+    
+    return str;
+}

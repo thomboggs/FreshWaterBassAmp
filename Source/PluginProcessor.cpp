@@ -30,7 +30,7 @@ Freshwater::Freshwater()
     
 #endif
 {
-    attachCompressorParams();
+    attachCompressorGainParams();
 //    auto floatHelper = [&apvts = this->apvts](auto& param, const auto& paramName)
 //    {
 //        param = dynamic_cast<juce::AudioParameterFloat*>(apvts.getParameter(paramName));
@@ -117,16 +117,18 @@ void Freshwater::changeProgramName (int index, const juce::String& newName)
 //==============================================================================
 void Freshwater::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
-    juce::dsp::ProcessSpec filterSpec, compressorSpec;
+    juce::dsp::ProcessSpec filterSpec, stereoSpec;
     filterSpec.maximumBlockSize = samplesPerBlock;
     filterSpec.sampleRate = sampleRate;
     filterSpec.numChannels = 1;
     
-    compressorSpec.maximumBlockSize = samplesPerBlock;
-    compressorSpec.sampleRate = sampleRate;
-    compressorSpec.numChannels = getTotalNumOutputChannels();
+    stereoSpec.maximumBlockSize = samplesPerBlock;
+    stereoSpec.sampleRate = sampleRate;
+    stereoSpec.numChannels = getTotalNumOutputChannels();
     
-    compressor.prepare(compressorSpec);
+    compressor.prepare(stereoSpec);
+    inputGain.prepare(stereoSpec);
+    outputGain.prepare(stereoSpec);
     
     leftChain.prepare(filterSpec);
     rightChain.prepare(filterSpec);
@@ -178,12 +180,17 @@ void Freshwater::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffe
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
         buffer.clear (i, 0, buffer.getNumSamples());
     
+    // Update Params
+    inputGain.updateGain();
+    outputGain.updateGain();
     compressor.updateCompressorSettings();
     
     updateParams();
     
     refreshFilters();
     
+    // Process
+    inputGain.process(buffer);
     compressor.process(buffer);
 
     // Process The Chain
@@ -197,6 +204,8 @@ void Freshwater::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffe
     
     leftChain.process(leftContext);
     rightChain.process(rightContext);
+    
+    outputGain.process(buffer);
 }
 
 //==============================================================================
@@ -264,7 +273,7 @@ void Freshwater::createCutParams(juce::AudioProcessorValueTreeState::ParameterLa
 }
 
 
-void Freshwater::createFilterParamas(juce::AudioProcessorValueTreeState::ParameterLayout &layout, const int filterNum)
+void Freshwater::createFilterParams(juce::AudioProcessorValueTreeState::ParameterLayout &layout, const int filterNum)
 {
     layout.add(std::make_unique<juce::AudioParameterBool>(getBypassParamName(filterNum),
                                                           getBypassParamName(filterNum),
@@ -338,6 +347,21 @@ void Freshwater::createCompressorParams ( juce::AudioProcessorValueTreeState::Pa
 }
 
 
+void Freshwater::createGainParams (juce::AudioProcessorValueTreeState::ParameterLayout& layout)
+{
+    auto gainRange = juce::NormalisableRange<float>(-24.f, 24.f, 0.5f, 1.f);
+    
+    layout.add(std::make_unique<juce::AudioParameterFloat>(getInputGainParamName(),
+                                                           getInputGainParamName(),
+                                                           gainRange,
+                                                           0.f));
+    layout.add(std::make_unique<juce::AudioParameterFloat>(getOutputGainParamName(),
+                                                           getOutputGainParamName(),
+                                                           gainRange,
+                                                           0.f));
+}
+
+
 juce::AudioProcessorValueTreeState::ParameterLayout Freshwater::createParameterLayout ()
 {
     juce::AudioProcessorValueTreeState::ParameterLayout layout;
@@ -363,6 +387,8 @@ juce::AudioProcessorValueTreeState::ParameterLayout Freshwater::createParameterL
     
     createCompressorParams(layout);
     
+    createGainParams(layout);
+    
     for ( int i = 0; i < chainLength; ++i)
     {
         // Add Low Cut Params to layout
@@ -378,14 +404,14 @@ juce::AudioProcessorValueTreeState::ParameterLayout Freshwater::createParameterL
             continue;
         }
         
-        createFilterParamas(layout, i);
+        createFilterParams(layout, i);
     }
     
     return layout;
 }
 
 
-void Freshwater::attachCompressorParams ()
+void Freshwater::attachCompressorGainParams ()
 {
     auto floatHelper = [&apvts = this->apvts](auto& param, const auto& paramName)
     {
@@ -402,6 +428,13 @@ void Freshwater::attachCompressorParams ()
     
     compressor.bypassed = dynamic_cast<juce::AudioParameterBool*>(apvts.getParameter(getCompBypassParamName()));
     jassert(compressor.bypassed != nullptr);
+    
+    // Gain
+    floatHelper(inputGain.gainInDb, getInputGainParamName());
+    floatHelper(outputGain.gainInDb, getOutputGainParamName());
+    
+    
+    
 }
 
 

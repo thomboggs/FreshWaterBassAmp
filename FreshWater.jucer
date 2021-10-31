@@ -4,6 +4,7 @@
               addUsingNamespaceToJuceHeader="0" jucerFormatVersion="1" cppLanguageStandard="latest">
   <MAINGROUP id="LO3Gj9" name="FreshWater">
     <GROUP id="{4F5F632D-3C26-9098-32AF-F4A76AAF05FE}" name="Source">
+      <FILE id="McWC7X" name="Gain.h" compile="0" resource="0" file="Source/Gain.h"/>
       <FILE id="zJSpQ6" name="Compressor.h" compile="0" resource="0" file="Source/Compressor.h"/>
       <FILE id="OhacuZ" name="FilterHelperFunctions.cpp" compile="1" resource="0"
             file="Source/FilterHelperFunctions.cpp"/>
