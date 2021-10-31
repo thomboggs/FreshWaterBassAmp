@@ -9,6 +9,7 @@
 #pragma once
 
 #include <JuceHeader.h>
+#include "ParametersBase.h"
 
 //==============================================================================
 /**
@@ -57,8 +58,23 @@ public:
     juce::AudioProcessorValueTreeState apvts {*this, nullptr, "Parameters", createParameterLayout()};
     
 private:
-    juce::dsp::Compressor<float> compressor;
-    juce::dsp::Gain<float> gain;
+    using Filter = juce::dsp::IIR::Filter<float>;
+    using FilterChain = juce::dsp::ProcessorChain<Filter, Filter, Filter>;
+    using Compressor = juce::dsp::Compressor<float>;
+    using Gain = juce::dsp::Gain<float>;
+    
+    // Todo: Add compressor and gain to chain
+    
+    Compressor inputCompressor;
+    Gain postCompGain;
+    FilterChain leftFilters, rightFilters;
+    
+    PreampParams
+    
+    
+    
+    
+    
     
     
     

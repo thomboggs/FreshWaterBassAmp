@@ -4,6 +4,8 @@
               addUsingNamespaceToJuceHeader="0" jucerFormatVersion="1">
   <MAINGROUP id="LO3Gj9" name="FreshWater">
     <GROUP id="{4F5F632D-3C26-9098-32AF-F4A76AAF05FE}" name="Source">
+      <FILE id="xcPOf5" name="ParametersBase.h" compile="0" resource="0"
+            file="Source/ParametersBase.h"/>
       <FILE id="sX1yFP" name="PluginProcessor.cpp" compile="1" resource="0"
             file="Source/PluginProcessor.cpp"/>
       <FILE id="ErmVlr" name="PluginProcessor.h" compile="0" resource="0"

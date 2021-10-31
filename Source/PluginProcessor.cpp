@@ -98,22 +98,24 @@ void FreshWaterAudioProcessor::prepareToPlay (double sampleRate, int samplesPerB
     spec.numChannels = getTotalNumOutputChannels();
     spec.sampleRate = sampleRate;
     
-    compressor.prepare(spec);
+    inputCompressor.prepare(spec);
     
     // Get apvts Values
     auto attack =  dynamic_cast<juce::AudioParameterFloat*>(apvts.getParameter("Attack"))->get();
     auto release =  dynamic_cast<juce::AudioParameterFloat*>(apvts.getParameter("Release"))->get();
     auto threshold = dynamic_cast<juce::AudioParameterFloat*>(apvts.getParameter("Threshold"))->get();
     auto ratio =  dynamic_cast<juce::AudioParameterChoice*>(apvts.getParameter("Ratio"))->getCurrentChoiceName().getFloatValue();
-    compressor.setAttack(attack);
-    compressor.setRelease(release);
-    compressor.setThreshold(threshold);
-    compressor.setRatio(ratio);
+    inputCompressor.setAttack(attack);
+    inputCompressor.setRelease(release);
+    inputCompressor.setThreshold(threshold);
+    inputCompressor.setRatio(ratio);
 
-    gain.prepare(spec);
+    postCompGain.prepare(spec);
     auto gainParam = dynamic_cast<juce::AudioParameterFloat*>(apvts.getParameter("Gain"))->get();
-    gain.setGainLinear(gainParam);
+    postCompGain.setGainLinear(gainParam);
     
+    leftFilters.prepare(spec);
+    rightFilters.prepare(spec);
 }
 
 void FreshWaterAudioProcessor::releaseResources()
@@ -172,17 +174,17 @@ void FreshWaterAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
     
     auto gainParam = dynamic_cast<juce::AudioParameterFloat*>(apvts.getParameter("Gain"))->get();
     
-    compressor.setAttack(attack);
-    compressor.setRelease(release);
-    compressor.setThreshold(threshold);
-    compressor.setRatio(ratio);
+    inputCompressor.setAttack(attack);
+    inputCompressor.setRelease(release);
+    inputCompressor.setThreshold(threshold);
+    inputCompressor.setRatio(ratio);
     
-    gain.setGainLinear(gainParam);
+    postCompGain.setGainLinear(gainParam);
     
     juce::dsp::AudioBlock<float> block (buffer);
     juce::dsp::ProcessContextReplacing<float> context (block);
     
-    gain.process(context);
+    postCompGain.process(context);
     
 }
 
@@ -204,12 +206,19 @@ void FreshWaterAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
     // You should use this method to store your parameters in the memory block.
     // You could do that either as raw data, or use the XML or ValueTree classes
     // as intermediaries to make it easy to save and load complex data.
+    juce::MemoryOutputStream mos(destData, true);
+    apvts.state.writeToStream(mos);
 }
 
 void FreshWaterAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
 {
     // You should use this method to restore your parameters from this memory block,
     // whose contents will have been created by the getStateInformation() call.
+    auto tree = juce::ValueTree::readFromData(data, sizeInBytes);
+    if (tree.isValid())
+    {
+        apvts.replaceState(tree);
+    }
 }
 
 
@@ -247,6 +256,23 @@ juce::AudioProcessorValueTreeState::ParameterLayout FreshWaterAudioProcessor::cr
                                                            "Gain",
                                                            juce::NormalisableRange<float>(0.f, 5.f, 0.05f),
                                                            0.5f));
+    
+    layout.add(std::make_unique<juce::AudioParameterFloat>("LowCut Freq",
+                                                           "LowCut Freq",
+                                                           juce::NormalisableRange<float>(20.f, 20000.f, 1.f, 1.5f),
+                                                           20.f));
+    layout.add(std::make_unique<juce::AudioParameterFloat>("Mid Freq",
+                                                           "Mid Freq",
+                                                           juce::NormalisableRange<float>(20.f, 20000.f, 1.f, 1.5f),
+                                                           500.f));
+    layout.add(std::make_unique<juce::AudioParameterFloat>("Mid Gain",
+                                                           "Mid Gain",
+                                                           juce::NormalisableRange<float>(0.f, 5.f, 1.f, 1.f),
+                                                           1.f));
+    layout.add(std::make_unique<juce::AudioParameterFloat>("HighCut Freq",
+                                                           "HighCut Freq",
+                                                           juce::NormalisableRange<float>(20.f, 20000.f, 1.f, 1.5f),
+                                                           20000.f));
     
     return layout;
 }
