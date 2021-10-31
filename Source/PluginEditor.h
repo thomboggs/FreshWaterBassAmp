@@ -1,24 +1,26 @@
 /*
   ==============================================================================
 
-    This file contains the basic framework code for a JUCE plugin editor.
+    This file was auto-generated!
+
+    It contains the basic framework code for a JUCE plugin editor.
 
   ==============================================================================
 */
 
 #pragma once
 
-#include <JuceHeader.h>
+#include "../JuceLibraryCode/JuceHeader.h"
 #include "PluginProcessor.h"
 
 //==============================================================================
 /**
 */
-class FreshWaterAudioProcessorEditor  : public juce::AudioProcessorEditor
+class Pfmcpp_project11AudioProcessorEditor  : public juce::AudioProcessorEditor
 {
 public:
-    FreshWaterAudioProcessorEditor (FreshWaterAudioProcessor&);
-    ~FreshWaterAudioProcessorEditor() override;
+    Pfmcpp_project11AudioProcessorEditor (Pfmcpp_project11AudioProcessor&);
+    ~Pfmcpp_project11AudioProcessorEditor();
 
     //==============================================================================
     void paint (juce::Graphics&) override;
@@ -27,7 +29,7 @@ public:
 private:
     // This reference is provided as a quick way for your editor to
     // access the processor object that created it.
-    FreshWaterAudioProcessor& audioProcessor;
+    Pfmcpp_project11AudioProcessor& processor;
 
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (FreshWaterAudioProcessorEditor)
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Pfmcpp_project11AudioProcessorEditor)
 };

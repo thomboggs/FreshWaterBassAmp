@@ -1,9 +1,24 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <JUCERPROJECT id="Qd9We8" name="FreshWater" projectType="audioplug" useAppConfig="0"
-              addUsingNamespaceToJuceHeader="0" jucerFormatVersion="1">
+              addUsingNamespaceToJuceHeader="0" jucerFormatVersion="1" cppLanguageStandard="latest">
   <MAINGROUP id="LO3Gj9" name="FreshWater">
     <GROUP id="{4F5F632D-3C26-9098-32AF-F4A76AAF05FE}" name="Source">
+      <FILE id="OhacuZ" name="FilterHelperFunctions.cpp" compile="1" resource="0"
+            file="Source/FilterHelperFunctions.cpp"/>
+      <FILE id="tJjIjD" name="FilterCoefficientGenerator.h" compile="0" resource="0"
+            file="Source/FilterCoefficientGenerator.h"/>
+      <FILE id="qnRRxS" name="FilterHelperFunctions.h" compile="0" resource="0"
+            file="Source/FilterHelperFunctions.h"/>
+      <FILE id="SOak98" name="CoefficientsMaker.h" compile="0" resource="0"
+            file="Source/CoefficientsMaker.h"/>
+      <FILE id="W6GbDq" name="FilterParametersBase.h" compile="0" resource="0"
+            file="Source/FilterParametersBase.h"/>
+      <FILE id="rv9D7K" name="FilterInfo.cpp" compile="1" resource="0" file="Source/FilterInfo.cpp"/>
+      <FILE id="IprMQs" name="FilterInfo.h" compile="0" resource="0" file="Source/FilterInfo.h"/>
+      <FILE id="deg4wU" name="Fifo.h" compile="0" resource="0" file="Source/Fifo.h"/>
+      <FILE id="tVjoUD" name="Decibel.h" compile="0" resource="0" file="Source/Decibel.h"/>
+      <FILE id="xu4hIG" name="ReleasePool.h" compile="0" resource="0" file="Source/ReleasePool.h"/>
       <FILE id="sX1yFP" name="PluginProcessor.cpp" compile="1" resource="0"
             file="Source/PluginProcessor.cpp"/>
       <FILE id="ErmVlr" name="PluginProcessor.h" compile="0" resource="0"
