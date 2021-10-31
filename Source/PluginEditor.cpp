@@ -12,7 +12,7 @@
 #include "PluginEditor.h"
 
 //==============================================================================
-Pfmcpp_project11AudioProcessorEditor::Pfmcpp_project11AudioProcessorEditor (Pfmcpp_project11AudioProcessor& p)
+Pfmcpp_project11AudioProcessorEditor::Pfmcpp_project11AudioProcessorEditor (Freshwater& p)
     : AudioProcessorEditor (&p), processor (p)
 {
     // Make sure that before the constructor has finished, you've set the

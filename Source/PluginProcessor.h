@@ -17,18 +17,19 @@
 #include "Fifo.h"
 #include "FilterCoefficientGenerator.h"
 #include "ReleasePool.h"
+#include "Compressor.h"
 
 
 
 //==============================================================================
 /**
 */
-class Pfmcpp_project11AudioProcessor  : public juce::AudioProcessor
+class Freshwater  : public juce::AudioProcessor
 {
 public:
     //==============================================================================
-    Pfmcpp_project11AudioProcessor();
-    ~Pfmcpp_project11AudioProcessor();
+    Freshwater();
+    ~Freshwater();
 
     //==============================================================================
     void prepareToPlay (double sampleRate, int samplesPerBlock) override;
@@ -64,12 +65,34 @@ public:
     void setStateInformation (const void* data, int sizeInBytes) override;
 
     // APVTS and Audio Parameter Creation
+    static void createCompressorParams ( juce::AudioProcessorValueTreeState::ParameterLayout& layout);
     static void createCutParams (juce::AudioProcessorValueTreeState::ParameterLayout& layout, const int filterNum, const bool isLowCut);
     static void createFilterParamas (juce::AudioProcessorValueTreeState::ParameterLayout& layout, const int filterNum);
     static juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout ();
     juce::AudioProcessorValueTreeState apvts {*this, nullptr, "Params", createParameterLayout() };
     
 private:
+    Compressor compressor;
+    void attachCompressorParams ();
+//    {
+//        auto floatHelper = [&apvts](auto& param, const auto& paramName)
+//        {
+//            param = dynamic_cast<juce::AudioParameterFloat*>(apvts.getParameter(paramName));
+//            jassert(param != nullptr);
+//        };
+//
+//        floatHelper(attack, getCompAttackParamName());
+//        floatHelper(release, getCompReleaseParamName());
+//        floatHelper(threshold, getCompThresholdParamName());
+//
+//        ratio = dynamic_cast<juce::AudioParameterChoice*>(apvts.getParameter(getCompRatioParamName()));
+//        jassert(ratio != nullptr);
+//
+//        bypassed = dynamic_cast<juce::AudioParameterBool*>(apvts.getParameter(getCompBypassParamName()));
+//        jassert(bypassed != nullptr);
+//    }
+    
+    
     enum FilterPosition
     {
         LowCut,
@@ -123,6 +146,6 @@ private:
     ReleasePool<CoefficientsPtr> leftHighCutReleasePool { }, rightHighCutReleasePool { };
     
     //==============================================================================
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Pfmcpp_project11AudioProcessor)
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Freshwater)
 };
 

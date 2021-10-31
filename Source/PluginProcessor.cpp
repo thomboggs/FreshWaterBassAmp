@@ -17,7 +17,7 @@
 
 
 //==============================================================================
-Pfmcpp_project11AudioProcessor::Pfmcpp_project11AudioProcessor()
+Freshwater::Freshwater()
 #ifndef JucePlugin_PreferredChannelConfigurations
      : AudioProcessor (BusesProperties()
                      #if ! JucePlugin_IsMidiEffect
@@ -30,28 +30,35 @@ Pfmcpp_project11AudioProcessor::Pfmcpp_project11AudioProcessor()
     
 #endif
 {
-//    fcgFilter("My Thread");
-//    using CutCoeffs = juce::dsp::IIR::Coefficients<float>;
-//    FilterCoefficientGenerator fcgFilter =
-//        FilterCoefficientGenerator<
-//            juce::ReferenceCountedArray<CutCoeffs>,
-//            HighCutLowCutParameters,
-//            CoefficientsMaker<float>,
-//            32>
-//        (lowCutFifo , "LowCut Thread");
+    attachCompressorParams();
+//    auto floatHelper = [&apvts = this->apvts](auto& param, const auto& paramName)
+//    {
+//        param = dynamic_cast<juce::AudioParameterFloat*>(apvts.getParameter(paramName));
+//        jassert(param != nullptr);
+//    };
+//
+//    floatHelper(compressor.attack, getCompAttackParamName());
+//    floatHelper(compressor.release, getCompReleaseParamName());
+//    floatHelper(compressor.threshold, getCompThresholdParamName());
+//
+//    compressor.ratio = dynamic_cast<juce::AudioParameterChoice*>(apvts.getParameter(getCompRatioParamName()));
+//    jassert(compressor.ratio != nullptr);
+//
+//    compressor.bypassed = dynamic_cast<juce::AudioParameterBool*>(apvts.getParameter(getCompBypassParamName()));
+//    jassert(compressor.bypassed != nullptr);
 }
 
-Pfmcpp_project11AudioProcessor::~Pfmcpp_project11AudioProcessor()
+Freshwater::~Freshwater()
 {
 }
 
 //==============================================================================
-const juce::String Pfmcpp_project11AudioProcessor::getName() const
+const juce::String Freshwater::getName() const
 {
     return JucePlugin_Name;
 }
 
-bool Pfmcpp_project11AudioProcessor::acceptsMidi() const
+bool Freshwater::acceptsMidi() const
 {
    #if JucePlugin_WantsMidiInput
     return true;
@@ -60,7 +67,7 @@ bool Pfmcpp_project11AudioProcessor::acceptsMidi() const
    #endif
 }
 
-bool Pfmcpp_project11AudioProcessor::producesMidi() const
+bool Freshwater::producesMidi() const
 {
    #if JucePlugin_ProducesMidiOutput
     return true;
@@ -69,7 +76,7 @@ bool Pfmcpp_project11AudioProcessor::producesMidi() const
    #endif
 }
 
-bool Pfmcpp_project11AudioProcessor::isMidiEffect() const
+bool Freshwater::isMidiEffect() const
 {
    #if JucePlugin_IsMidiEffect
     return true;
@@ -78,55 +85,61 @@ bool Pfmcpp_project11AudioProcessor::isMidiEffect() const
    #endif
 }
 
-double Pfmcpp_project11AudioProcessor::getTailLengthSeconds() const
+double Freshwater::getTailLengthSeconds() const
 {
     return 0.0;
 }
 
-int Pfmcpp_project11AudioProcessor::getNumPrograms()
+int Freshwater::getNumPrograms()
 {
     return 1;   // NB: some hosts don't cope very well if you tell them there are 0 programs,
                 // so this should be at least 1, even if you're not really implementing programs.
 }
 
-int Pfmcpp_project11AudioProcessor::getCurrentProgram()
+int Freshwater::getCurrentProgram()
 {
     return 0;
 }
 
-void Pfmcpp_project11AudioProcessor::setCurrentProgram (int index)
+void Freshwater::setCurrentProgram (int index)
 {
 }
 
-const juce::String Pfmcpp_project11AudioProcessor::getProgramName (int index)
+const juce::String Freshwater::getProgramName (int index)
 {
     return {};
 }
 
-void Pfmcpp_project11AudioProcessor::changeProgramName (int index, const juce::String& newName)
+void Freshwater::changeProgramName (int index, const juce::String& newName)
 {
 }
 
 //==============================================================================
-void Pfmcpp_project11AudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
+void Freshwater::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
-    juce::dsp::ProcessSpec spec;
-    spec.maximumBlockSize = samplesPerBlock;
-    spec.sampleRate = sampleRate;
-    spec.numChannels = 1;
+    juce::dsp::ProcessSpec filterSpec, compressorSpec;
+    filterSpec.maximumBlockSize = samplesPerBlock;
+    filterSpec.sampleRate = sampleRate;
+    filterSpec.numChannels = 1;
     
-    leftChain.prepare(spec);
-    rightChain.prepare(spec);
+    compressorSpec.maximumBlockSize = samplesPerBlock;
+    compressorSpec.sampleRate = sampleRate;
+    compressorSpec.numChannels = getTotalNumOutputChannels();
+    
+    compressor.prepare(compressorSpec);
+    
+    leftChain.prepare(filterSpec);
+    rightChain.prepare(filterSpec);
 }
 
-void Pfmcpp_project11AudioProcessor::releaseResources()
+void Freshwater::releaseResources()
 {
     // When playback stops, you can use this as an opportunity to free up any
     // spare memory, etc.
 }
 
 #ifndef JucePlugin_PreferredChannelConfigurations
-bool Pfmcpp_project11AudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
+bool Freshwater::isBusesLayoutSupported (const BusesLayout& layouts) const
 {
   #if JucePlugin_IsMidiEffect
     ignoreUnused (layouts);
@@ -149,7 +162,7 @@ bool Pfmcpp_project11AudioProcessor::isBusesLayoutSupported (const BusesLayout& 
 }
 #endif
 
-void Pfmcpp_project11AudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
+void Freshwater::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
 {
     juce::ScopedNoDenormals noDenormals;
     auto totalNumInputChannels  = getTotalNumInputChannels();
@@ -165,37 +178,41 @@ void Pfmcpp_project11AudioProcessor::processBlock (juce::AudioBuffer<float>& buf
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
         buffer.clear (i, 0, buffer.getNumSamples());
     
+    compressor.updateCompressorSettings();
+    
     updateParams();
     
     refreshFilters();
+    
+    compressor.process(buffer);
 
     // Process The Chain
-    juce::dsp::AudioBlock<float> block(buffer);
+    auto filterBlock = juce::dsp::AudioBlock<float> (buffer);
     
-    auto leftBlock = block.getSingleChannelBlock(0);
-    auto rightBlock = block.getSingleChannelBlock(1);
+    auto leftBlock = filterBlock.getSingleChannelBlock(0);
+    auto rightBlock = filterBlock.getSingleChannelBlock(1);
     
-    juce::dsp::ProcessContextReplacing<float> leftContext (leftBlock);
-    juce::dsp::ProcessContextReplacing<float> rightContext (rightBlock);
+    auto leftContext = juce::dsp::ProcessContextReplacing<float> (leftBlock);
+    auto rightContext = juce::dsp::ProcessContextReplacing<float> (rightBlock);
     
     leftChain.process(leftContext);
     rightChain.process(rightContext);
 }
 
 //==============================================================================
-bool Pfmcpp_project11AudioProcessor::hasEditor() const
+bool Freshwater::hasEditor() const
 {
     return true; // (change this to false if you choose to not supply an editor)
 }
 
-juce::AudioProcessorEditor* Pfmcpp_project11AudioProcessor::createEditor()
+juce::AudioProcessorEditor* Freshwater::createEditor()
 {
 //    return new Pfmcpp_project10AudioProcessorEditor (*this);
     return new juce::GenericAudioProcessorEditor(*this);
 }
 
 //==============================================================================
-void Pfmcpp_project11AudioProcessor::getStateInformation (juce::MemoryBlock& destData)
+void Freshwater::getStateInformation (juce::MemoryBlock& destData)
 {
     // You should use this method to store your parameters in the memory block.
     // You could do that either as raw data, or use the XML or ValueTree classes
@@ -204,7 +221,7 @@ void Pfmcpp_project11AudioProcessor::getStateInformation (juce::MemoryBlock& des
     apvts.state.writeToStream(mos);
 }
 
-void Pfmcpp_project11AudioProcessor::setStateInformation (const void* data, int sizeInBytes)
+void Freshwater::setStateInformation (const void* data, int sizeInBytes)
 {
     // You should use this method to restore your parameters from this memory block,
     // whose contents will have been created by the getStateInformation() call.
@@ -217,7 +234,7 @@ void Pfmcpp_project11AudioProcessor::setStateInformation (const void* data, int 
 }
 
 
-void Pfmcpp_project11AudioProcessor::createCutParams(juce::AudioProcessorValueTreeState::ParameterLayout &layout, const int filterNum, const bool isLowCut)
+void Freshwater::createCutParams(juce::AudioProcessorValueTreeState::ParameterLayout &layout, const int filterNum, const bool isLowCut)
 {
     layout.add(std::make_unique<juce::AudioParameterBool>(getBypassParamName(filterNum),
                                                           getBypassParamName(filterNum),
@@ -247,7 +264,7 @@ void Pfmcpp_project11AudioProcessor::createCutParams(juce::AudioProcessorValueTr
 }
 
 
-void Pfmcpp_project11AudioProcessor::createFilterParamas(juce::AudioProcessorValueTreeState::ParameterLayout &layout, const int filterNum)
+void Freshwater::createFilterParamas(juce::AudioProcessorValueTreeState::ParameterLayout &layout, const int filterNum)
 {
     layout.add(std::make_unique<juce::AudioParameterBool>(getBypassParamName(filterNum),
                                                           getBypassParamName(filterNum),
@@ -283,7 +300,45 @@ void Pfmcpp_project11AudioProcessor::createFilterParamas(juce::AudioProcessorVal
 }
 
 
-juce::AudioProcessorValueTreeState::ParameterLayout Pfmcpp_project11AudioProcessor::createParameterLayout ()
+void Freshwater::createCompressorParams ( juce::AudioProcessorValueTreeState::ParameterLayout& layout)
+{
+    auto attackReleaseRange =  juce::NormalisableRange<float>( 5.f, 500.f, 1.f, 1.f );
+    
+    layout.add(std::make_unique<juce::AudioParameterFloat>(getCompAttackParamName(),
+                                                           getCompAttackParamName(),
+                                                           attackReleaseRange,
+                                                           50.f));
+    
+    layout.add(std::make_unique<juce::AudioParameterFloat>(getCompReleaseParamName(),
+                                                           getCompReleaseParamName(),
+                                                           attackReleaseRange,
+                                                           50.f));
+    
+    layout.add(std::make_unique<juce::AudioParameterFloat>(getCompThresholdParamName(),
+                                                           getCompThresholdParamName(),
+                                                           juce::NormalisableRange<float>(-60.f, 12.f, 1.f, 1.f),
+                                                           0.f));
+    
+    juce::StringArray strArray;
+    std::vector<double> threshVec = {1.0, 2.0, 3.0, 5.0, 8.0, 13.0, 21.0, 34.0, 55.0, 89.0};
+    for (auto thresh : threshVec)
+    {
+        strArray.add(juce::String(thresh, 1));
+    }
+    
+    layout.add(std::make_unique<juce::AudioParameterChoice>(getCompRatioParamName(),
+                                                            getCompRatioParamName(),
+                                                            strArray,
+                                                            2));
+    
+    layout.add(std::make_unique<juce::AudioParameterBool>(getCompBypassParamName(),
+                                                          getCompBypassParamName(),
+                                                          true));
+    
+}
+
+
+juce::AudioProcessorValueTreeState::ParameterLayout Freshwater::createParameterLayout ()
 {
     juce::AudioProcessorValueTreeState::ParameterLayout layout;
     
@@ -305,6 +360,8 @@ juce::AudioProcessorValueTreeState::ParameterLayout Pfmcpp_project11AudioProcess
             - Order
             - IsLowCut = False
      */
+    
+    createCompressorParams(layout);
     
     for ( int i = 0; i < chainLength; ++i)
     {
@@ -328,7 +385,28 @@ juce::AudioProcessorValueTreeState::ParameterLayout Pfmcpp_project11AudioProcess
 }
 
 
-FilterParameters Pfmcpp_project11AudioProcessor::getFilterParams(int bandNum)
+void Freshwater::attachCompressorParams ()
+{
+    auto floatHelper = [&apvts = this->apvts](auto& param, const auto& paramName)
+    {
+        param = dynamic_cast<juce::AudioParameterFloat*>(apvts.getParameter(paramName));
+        jassert(param != nullptr);
+    };
+    
+    floatHelper(compressor.attack, getCompAttackParamName());
+    floatHelper(compressor.release, getCompReleaseParamName());
+    floatHelper(compressor.threshold, getCompThresholdParamName());
+    
+    compressor.ratio = dynamic_cast<juce::AudioParameterChoice*>(apvts.getParameter(getCompRatioParamName()));
+    jassert(compressor.ratio != nullptr);
+    
+    compressor.bypassed = dynamic_cast<juce::AudioParameterBool*>(apvts.getParameter(getCompBypassParamName()));
+    jassert(compressor.bypassed != nullptr);
+}
+
+
+
+FilterParameters Freshwater::getFilterParams(int bandNum)
 {
     FilterParameters params;
 
@@ -363,7 +441,7 @@ FilterParameters Pfmcpp_project11AudioProcessor::getFilterParams(int bandNum)
 }
 
 
-HighCutLowCutParameters Pfmcpp_project11AudioProcessor::getCutParams(int bandNum)
+HighCutLowCutParameters Freshwater::getCutParams(int bandNum)
 {
     HighCutLowCutParameters params;
     
@@ -395,7 +473,7 @@ HighCutLowCutParameters Pfmcpp_project11AudioProcessor::getCutParams(int bandNum
 
 
 
-void Pfmcpp_project11AudioProcessor::setChainBypass(const bool isBypassed, FilterPosition pos)
+void Freshwater::setChainBypass(const bool isBypassed, FilterPosition pos)
 {
     switch (pos)
     {
@@ -415,7 +493,7 @@ void Pfmcpp_project11AudioProcessor::setChainBypass(const bool isBypassed, Filte
 }
 
 
-void Pfmcpp_project11AudioProcessor::updateParams()
+void Freshwater::updateParams()
 {
     // Check if params have changed if so, update via fcg
     /*
@@ -494,7 +572,7 @@ void Pfmcpp_project11AudioProcessor::updateParams()
 }
 
 
-void Pfmcpp_project11AudioProcessor::refreshFilters()
+void Freshwater::refreshFilters()
 {
     refreshLowCutFilter(leftLowCutFifo,
                         leftChain,
@@ -535,7 +613,7 @@ void Pfmcpp_project11AudioProcessor::refreshFilters()
 }
 
 
-void Pfmcpp_project11AudioProcessor::refreshLowCutFilter (Fifo<juce::ReferenceCountedArray<CutCoeffs>, 32>& cutFifo,
+void Freshwater::refreshLowCutFilter (Fifo<juce::ReferenceCountedArray<CutCoeffs>, 32>& cutFifo,
                                                           FilterChain& chain,
                                                           ReleasePool<CoefficientsPtr>& cutPool)
 {
@@ -581,7 +659,7 @@ void Pfmcpp_project11AudioProcessor::refreshLowCutFilter (Fifo<juce::ReferenceCo
 }
 
 
-void Pfmcpp_project11AudioProcessor::refreshHighCutFilter (Fifo<juce::ReferenceCountedArray<CutCoeffs>, 32>& cutFifo,
+void Freshwater::refreshHighCutFilter (Fifo<juce::ReferenceCountedArray<CutCoeffs>, 32>& cutFifo,
                                                           FilterChain& chain,
                                                           ReleasePool<CoefficientsPtr>& cutPool)
 {
@@ -630,5 +708,5 @@ void Pfmcpp_project11AudioProcessor::refreshHighCutFilter (Fifo<juce::ReferenceC
 // This creates new instances of the plugin..
 juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
 {
-    return new Pfmcpp_project11AudioProcessor();
+    return new Freshwater();
 }

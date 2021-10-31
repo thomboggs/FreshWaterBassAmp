@@ -18,3 +18,9 @@ juce::String getQualityParamName(int filterNum);
 juce::String getFreqParamName(int filterNum);
 juce::String getTypeParamName(int filterNum);
 juce::String getBypassParamName(int filterNum);
+
+juce::String getCompAttackParamName();
+juce::String getCompReleaseParamName();
+juce::String getCompThresholdParamName();
+juce::String getCompRatioParamName();
+juce::String getCompBypassParamName();
