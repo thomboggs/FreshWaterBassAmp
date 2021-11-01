@@ -26,10 +26,10 @@ FreshwaterAudioProcessorEditor::FreshwaterAudioProcessorEditor (FreshwaterAudioP
 , compAttackSliderAttachment(processor.apvts, getCompAttackParamName(), compAttackSlider)
 , compReleaseSliderAttachment(processor.apvts, getCompReleaseParamName(), compReleaseSlider)
 , compThresholdSliderAttachment(processor.apvts, getCompThresholdParamName(), compThresholdSlider)
+, compRatioSliderAttachment(processor.apvts, getCompRatioParamName(), compRatioSlider)
 , compBypassButtonAttachment(processor.apvts, getCompBypassParamName(), compBypassButton)
 , lowBypassButtonAttachment(processor.apvts, getBypassParamName(0), lowBypassButton)
 , midBypassButtonAttachment(processor.apvts, getBypassParamName(1), midBypassButton)
-, compRatioSliderAttachment(processor.apvts, getCompRatioParamName(), compRatioSlider)
 , highBypassButtonAttachment(processor.apvts, getBypassParamName(2), highBypassButton)
 
 {
