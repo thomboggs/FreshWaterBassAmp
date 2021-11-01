@@ -13,11 +13,8 @@
 #include "FilterHelperFunctions.h"
 
 
-
-
-
 //==============================================================================
-Freshwater::Freshwater()
+FreshwaterAudioProcessor::FreshwaterAudioProcessor()
 #ifndef JucePlugin_PreferredChannelConfigurations
      : AudioProcessor (BusesProperties()
                      #if ! JucePlugin_IsMidiEffect
@@ -48,17 +45,17 @@ Freshwater::Freshwater()
 //    jassert(compressor.bypassed != nullptr);
 }
 
-Freshwater::~Freshwater()
+FreshwaterAudioProcessor::~FreshwaterAudioProcessor()
 {
 }
 
 //==============================================================================
-const juce::String Freshwater::getName() const
+const juce::String FreshwaterAudioProcessor::getName() const
 {
     return JucePlugin_Name;
 }
 
-bool Freshwater::acceptsMidi() const
+bool FreshwaterAudioProcessor::acceptsMidi() const
 {
    #if JucePlugin_WantsMidiInput
     return true;
@@ -67,7 +64,7 @@ bool Freshwater::acceptsMidi() const
    #endif
 }
 
-bool Freshwater::producesMidi() const
+bool FreshwaterAudioProcessor::producesMidi() const
 {
    #if JucePlugin_ProducesMidiOutput
     return true;
@@ -76,7 +73,7 @@ bool Freshwater::producesMidi() const
    #endif
 }
 
-bool Freshwater::isMidiEffect() const
+bool FreshwaterAudioProcessor::isMidiEffect() const
 {
    #if JucePlugin_IsMidiEffect
     return true;
@@ -85,37 +82,37 @@ bool Freshwater::isMidiEffect() const
    #endif
 }
 
-double Freshwater::getTailLengthSeconds() const
+double FreshwaterAudioProcessor::getTailLengthSeconds() const
 {
     return 0.0;
 }
 
-int Freshwater::getNumPrograms()
+int FreshwaterAudioProcessor::getNumPrograms()
 {
     return 1;   // NB: some hosts don't cope very well if you tell them there are 0 programs,
                 // so this should be at least 1, even if you're not really implementing programs.
 }
 
-int Freshwater::getCurrentProgram()
+int FreshwaterAudioProcessor::getCurrentProgram()
 {
     return 0;
 }
 
-void Freshwater::setCurrentProgram (int index)
+void FreshwaterAudioProcessor::setCurrentProgram (int index)
 {
 }
 
-const juce::String Freshwater::getProgramName (int index)
+const juce::String FreshwaterAudioProcessor::getProgramName (int index)
 {
     return {};
 }
 
-void Freshwater::changeProgramName (int index, const juce::String& newName)
+void FreshwaterAudioProcessor::changeProgramName (int index, const juce::String& newName)
 {
 }
 
 //==============================================================================
-void Freshwater::prepareToPlay (double sampleRate, int samplesPerBlock)
+void FreshwaterAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
     juce::dsp::ProcessSpec filterSpec, stereoSpec;
     filterSpec.maximumBlockSize = samplesPerBlock;
@@ -134,14 +131,14 @@ void Freshwater::prepareToPlay (double sampleRate, int samplesPerBlock)
     rightChain.prepare(filterSpec);
 }
 
-void Freshwater::releaseResources()
+void FreshwaterAudioProcessor::releaseResources()
 {
     // When playback stops, you can use this as an opportunity to free up any
     // spare memory, etc.
 }
 
 #ifndef JucePlugin_PreferredChannelConfigurations
-bool Freshwater::isBusesLayoutSupported (const BusesLayout& layouts) const
+bool FreshwaterAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
 {
   #if JucePlugin_IsMidiEffect
     ignoreUnused (layouts);
@@ -164,7 +161,7 @@ bool Freshwater::isBusesLayoutSupported (const BusesLayout& layouts) const
 }
 #endif
 
-void Freshwater::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
+void FreshwaterAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
 {
     juce::ScopedNoDenormals noDenormals;
     auto totalNumInputChannels  = getTotalNumInputChannels();
@@ -209,19 +206,19 @@ void Freshwater::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffe
 }
 
 //==============================================================================
-bool Freshwater::hasEditor() const
+bool FreshwaterAudioProcessor::hasEditor() const
 {
     return true; // (change this to false if you choose to not supply an editor)
 }
 
-juce::AudioProcessorEditor* Freshwater::createEditor()
+juce::AudioProcessorEditor* FreshwaterAudioProcessor::createEditor()
 {
-//    return new Pfmcpp_project10AudioProcessorEditor (*this);
-    return new juce::GenericAudioProcessorEditor(*this);
+    return new FreshwaterAudioProcessorEditor (*this);
+//    return new juce::GenericAudioProcessorEditor(*this);
 }
 
 //==============================================================================
-void Freshwater::getStateInformation (juce::MemoryBlock& destData)
+void FreshwaterAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
 {
     // You should use this method to store your parameters in the memory block.
     // You could do that either as raw data, or use the XML or ValueTree classes
@@ -230,7 +227,7 @@ void Freshwater::getStateInformation (juce::MemoryBlock& destData)
     apvts.state.writeToStream(mos);
 }
 
-void Freshwater::setStateInformation (const void* data, int sizeInBytes)
+void FreshwaterAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
 {
     // You should use this method to restore your parameters from this memory block,
     // whose contents will have been created by the getStateInformation() call.
@@ -243,7 +240,7 @@ void Freshwater::setStateInformation (const void* data, int sizeInBytes)
 }
 
 
-void Freshwater::createCutParams(juce::AudioProcessorValueTreeState::ParameterLayout &layout, const int filterNum, const bool isLowCut)
+void FreshwaterAudioProcessor::createCutParams(juce::AudioProcessorValueTreeState::ParameterLayout &layout, const int filterNum, const bool isLowCut)
 {
     layout.add(std::make_unique<juce::AudioParameterBool>(getBypassParamName(filterNum),
                                                           getBypassParamName(filterNum),
@@ -273,7 +270,7 @@ void Freshwater::createCutParams(juce::AudioProcessorValueTreeState::ParameterLa
 }
 
 
-void Freshwater::createFilterParams(juce::AudioProcessorValueTreeState::ParameterLayout &layout, const int filterNum)
+void FreshwaterAudioProcessor::createFilterParams(juce::AudioProcessorValueTreeState::ParameterLayout &layout, const int filterNum)
 {
     layout.add(std::make_unique<juce::AudioParameterBool>(getBypassParamName(filterNum),
                                                           getBypassParamName(filterNum),
@@ -309,7 +306,7 @@ void Freshwater::createFilterParams(juce::AudioProcessorValueTreeState::Paramete
 }
 
 
-void Freshwater::createCompressorParams ( juce::AudioProcessorValueTreeState::ParameterLayout& layout)
+void FreshwaterAudioProcessor::createCompressorParams ( juce::AudioProcessorValueTreeState::ParameterLayout& layout)
 {
     auto attackReleaseRange =  juce::NormalisableRange<float>( 5.f, 500.f, 1.f, 1.f );
     
@@ -347,7 +344,7 @@ void Freshwater::createCompressorParams ( juce::AudioProcessorValueTreeState::Pa
 }
 
 
-void Freshwater::createGainParams (juce::AudioProcessorValueTreeState::ParameterLayout& layout)
+void FreshwaterAudioProcessor::createGainParams (juce::AudioProcessorValueTreeState::ParameterLayout& layout)
 {
     auto gainRange = juce::NormalisableRange<float>(-24.f, 24.f, 0.5f, 1.f);
     
@@ -362,7 +359,7 @@ void Freshwater::createGainParams (juce::AudioProcessorValueTreeState::Parameter
 }
 
 
-juce::AudioProcessorValueTreeState::ParameterLayout Freshwater::createParameterLayout ()
+juce::AudioProcessorValueTreeState::ParameterLayout FreshwaterAudioProcessor::createParameterLayout ()
 {
     juce::AudioProcessorValueTreeState::ParameterLayout layout;
     
@@ -411,7 +408,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout Freshwater::createParameterL
 }
 
 
-void Freshwater::attachCompressorGainParams ()
+void FreshwaterAudioProcessor::attachCompressorGainParams ()
 {
     auto floatHelper = [&apvts = this->apvts](auto& param, const auto& paramName)
     {
@@ -439,7 +436,7 @@ void Freshwater::attachCompressorGainParams ()
 
 
 
-FilterParameters Freshwater::getFilterParams(int bandNum)
+FilterParameters FreshwaterAudioProcessor::getFilterParams(int bandNum)
 {
     FilterParameters params;
 
@@ -474,7 +471,7 @@ FilterParameters Freshwater::getFilterParams(int bandNum)
 }
 
 
-HighCutLowCutParameters Freshwater::getCutParams(int bandNum)
+HighCutLowCutParameters FreshwaterAudioProcessor::getCutParams(int bandNum)
 {
     HighCutLowCutParameters params;
     
@@ -506,7 +503,7 @@ HighCutLowCutParameters Freshwater::getCutParams(int bandNum)
 
 
 
-void Freshwater::setChainBypass(const bool isBypassed, FilterPosition pos)
+void FreshwaterAudioProcessor::setChainBypass(const bool isBypassed, FilterPosition pos)
 {
     switch (pos)
     {
@@ -526,7 +523,7 @@ void Freshwater::setChainBypass(const bool isBypassed, FilterPosition pos)
 }
 
 
-void Freshwater::updateParams()
+void FreshwaterAudioProcessor::updateParams()
 {
     // Check if params have changed if so, update via fcg
     /*
@@ -605,7 +602,7 @@ void Freshwater::updateParams()
 }
 
 
-void Freshwater::refreshFilters()
+void FreshwaterAudioProcessor::refreshFilters()
 {
     refreshLowCutFilter(leftLowCutFifo,
                         leftChain,
@@ -646,7 +643,7 @@ void Freshwater::refreshFilters()
 }
 
 
-void Freshwater::refreshLowCutFilter (Fifo<juce::ReferenceCountedArray<CutCoeffs>, 32>& cutFifo,
+void FreshwaterAudioProcessor::refreshLowCutFilter (Fifo<juce::ReferenceCountedArray<CutCoeffs>, 32>& cutFifo,
                                                           FilterChain& chain,
                                                           ReleasePool<CoefficientsPtr>& cutPool)
 {
@@ -692,7 +689,7 @@ void Freshwater::refreshLowCutFilter (Fifo<juce::ReferenceCountedArray<CutCoeffs
 }
 
 
-void Freshwater::refreshHighCutFilter (Fifo<juce::ReferenceCountedArray<CutCoeffs>, 32>& cutFifo,
+void FreshwaterAudioProcessor::refreshHighCutFilter (Fifo<juce::ReferenceCountedArray<CutCoeffs>, 32>& cutFifo,
                                                           FilterChain& chain,
                                                           ReleasePool<CoefficientsPtr>& cutPool)
 {
@@ -741,5 +738,5 @@ void Freshwater::refreshHighCutFilter (Fifo<juce::ReferenceCountedArray<CutCoeff
 // This creates new instances of the plugin..
 juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
 {
-    return new Freshwater();
+    return new FreshwaterAudioProcessor();
 }

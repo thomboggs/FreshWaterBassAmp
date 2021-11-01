@@ -24,12 +24,12 @@
 //==============================================================================
 /**
 */
-class Freshwater  : public juce::AudioProcessor
+class FreshwaterAudioProcessor  : public juce::AudioProcessor
 {
 public:
     //==============================================================================
-    Freshwater();
-    ~Freshwater();
+    FreshwaterAudioProcessor();
+    ~FreshwaterAudioProcessor();
 
     //==============================================================================
     void prepareToPlay (double sampleRate, int samplesPerBlock) override;
@@ -77,7 +77,6 @@ private:
     Gain inputGain, outputGain;
     
     void attachCompressorGainParams ();
-    
     
     enum FilterPosition
     {
@@ -132,6 +131,6 @@ private:
     ReleasePool<CoefficientsPtr> leftHighCutReleasePool { }, rightHighCutReleasePool { };
     
     //==============================================================================
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Freshwater)
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (FreshwaterAudioProcessor)
 };
 
