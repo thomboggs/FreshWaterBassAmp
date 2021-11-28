@@ -91,7 +91,7 @@ void FreshwaterAudioProcessorEditor::resized()
     compBypassButton.setBounds(compBypassArea);
     
     // Filter Layout
-    auto filterResponseArea = filterArea.removeFromTop(filterArea.getHeight() * 0.5);
+    auto SpectrumResponseArea = filterArea.removeFromTop(filterArea.getHeight() * 0.5);
     auto lowFilterArea = filterArea.removeFromLeft(filterArea.getWidth() * 0.33);
     auto midFilterArea = filterArea.removeFromLeft(filterArea.getWidth() * 0.5);
     auto highFilterArea = filterArea;

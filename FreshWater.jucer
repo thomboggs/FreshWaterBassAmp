@@ -5,6 +5,8 @@
   <MAINGROUP id="LO3Gj9" name="FreshWater">
     <GROUP id="{4F5F632D-3C26-9098-32AF-F4A76AAF05FE}" name="Source">
       <GROUP id="{891F9E8C-10FA-96FA-505D-2F7473ABE47C}" name="GUI">
+        <FILE id="kkfRSc" name="RotarySlider.cpp" compile="1" resource="0"
+              file="Source/GUI/RotarySlider.cpp"/>
         <FILE id="vu7gSa" name="GainSlider.cpp" compile="1" resource="0" file="Source/GUI/GainSlider.cpp"/>
         <FILE id="l6TPkT" name="GainSlider.h" compile="0" resource="0" file="Source/GUI/GainSlider.h"/>
         <FILE id="oNLP4m" name="BypassButton.cpp" compile="1" resource="0"
@@ -14,10 +16,8 @@
               file="Source/GUI/ResponseCurveComponent.cpp"/>
         <FILE id="RUZaqM" name="ResponseCurveComponent.h" compile="0" resource="0"
               file="Source/GUI/ResponseCurveComponent.h"/>
-        <FILE id="ypiVwg" name="RotarySliderLookAndFeel.cpp" compile="1" resource="0"
-              file="Source/GUI/RotarySliderLookAndFeel.cpp"/>
-        <FILE id="MGnOrG" name="RotarySliderLookAndFeel.h" compile="0" resource="0"
-              file="Source/GUI/RotarySliderLookAndFeel.h"/>
+        <FILE id="ypiVwg" name="LookAndFeel.cpp" compile="1" resource="0" file="Source/GUI/LookAndFeel.cpp"/>
+        <FILE id="MGnOrG" name="LookAndFeel.h" compile="0" resource="0" file="Source/GUI/LookAndFeel.h"/>
         <FILE id="JspXJz" name="RotarySlider.h" compile="0" resource="0" file="Source/GUI/RotarySlider.h"/>
       </GROUP>
       <FILE id="McWC7X" name="Gain.h" compile="0" resource="0" file="Source/Gain.h"/>

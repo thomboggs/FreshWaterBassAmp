@@ -213,8 +213,8 @@ bool FreshwaterAudioProcessor::hasEditor() const
 
 juce::AudioProcessorEditor* FreshwaterAudioProcessor::createEditor()
 {
-    return new FreshwaterAudioProcessorEditor (*this);
-//    return new juce::GenericAudioProcessorEditor(*this);
+//    return new FreshwaterAudioProcessorEditor (*this);
+    return new juce::GenericAudioProcessorEditor(*this);
 }
 
 //==============================================================================
