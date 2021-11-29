@@ -144,7 +144,19 @@ ParamType FreshwaterAudioProcessor::getParams (const int bandNum, const double s
     {
         if (auto* p = dynamic_cast<juce::AudioParameterChoice*>(apvts.getParameter(getTypeParamName(bandNum))))
         {
-            params.filterType = static_cast<FilterInfo::FilterType>(p->getIndex());
+            switch (bandNum)
+            {
+                case 0:
+                    params.filterType = FilterInfo::FilterType::LowShelf;
+                    break;
+                case 1:
+                    params.filterType = FilterInfo::FilterType::Peak;
+                    break;
+                case 2:
+                    params.filterType = FilterInfo::FilterType::HighShelf;
+                    break;
+            }
+        
         }
 
         if (auto* p = dynamic_cast<juce::AudioParameterFloat*>(apvts.getParameter(getGainParamName(bandNum))))
