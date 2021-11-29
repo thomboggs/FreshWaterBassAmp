@@ -19,33 +19,25 @@
 struct RotarySlider  : public juce::Slider
 {
     RotarySlider(juce::RangedAudioParameter& rap, const juce::String& unitSuffix) : juce::Slider(juce::Slider::SliderStyle::RotaryHorizontalVerticalDrag,
-                                            juce::Slider::TextEntryBoxPosition::NoTextBox), param(&rap), suffix(unitSuffix)
-        {
-            setLookAndFeel(&lnf);
-        }
-        
-        ~RotarySlider()
-        {
-            setLookAndFeel(nullptr);
-        }
-        
-        struct LabelPos
-        {
-            float pos;
-            juce::String label;
-        };
-        
-        
-        void paint(juce::Graphics& g) override ;
+                                  juce::Slider::TextEntryBoxPosition::NoTextBox),
+        param(&rap),
+        suffix(unitSuffix)
+    {
+        setLookAndFeel(&lnf);
+    }
     
-        juce::Rectangle<int> getSliderBounds() const;
+    ~RotarySlider()
+    {
+        setLookAndFeel(nullptr);
+    }
     
-        int getTextHeight() const { return 14; }
+    void paint(juce::Graphics& g) override ;
+    juce::Rectangle<int> getSliderBounds() const;
+    int getTextHeight() const { return 14; }
+    juce::String getDisplayString() const;
     
-        juce::String getDisplayString() const;
-    
-    private:
-        LookAndFeel lnf;
-        juce::RangedAudioParameter* param;
-        juce::String suffix;
+private:
+    LookAndFeel lnf;
+    juce::RangedAudioParameter* param;
+    juce::String suffix;
 };
