@@ -66,7 +66,6 @@ private:
                 lowFilterSectionLabel,
                 midFilterSectionLabel,
                 highFilterSectionLabel,
-                
                 outGainLabel;
     
     ResponseCurveComponent responseCurveComponent;

@@ -28,6 +28,7 @@ FreshwaterAudioProcessorEditor::FreshwaterAudioProcessorEditor (FreshwaterAudioP
 , compReleaseSlider(*processor.apvts.getParameter(getCompReleaseParamName()), "ms")
 , compThresholdSlider(*processor.apvts.getParameter(getCompThresholdParamName()), "dB")
 , compRatioSlider(*processor.apvts.getParameter(getCompRatioParamName()), "")
+, responseCurveComponent(processor)
 , inputGainSliderAttachment(processor.apvts, getInputGainParamName(), inputGainSlider)
 , outputGainSliderAttachment(processor.apvts, getOutputGainParamName(), outputGainSlider)
 , lowFreqSliderAttachment(processor.apvts, getFreqParamName(0), lowFreqSlider)
@@ -47,6 +48,7 @@ FreshwaterAudioProcessorEditor::FreshwaterAudioProcessorEditor (FreshwaterAudioP
 , lowBypassButtonAttachment(processor.apvts, getBypassParamName(0), lowBypassButton)
 , midBypassButtonAttachment(processor.apvts, getBypassParamName(1), midBypassButton)
 , highBypassButtonAttachment(processor.apvts, getBypassParamName(2), highBypassButton)
+
 
 {
     // Make sure that before the constructor has finished, you've set the
