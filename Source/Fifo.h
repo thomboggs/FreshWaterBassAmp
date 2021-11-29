@@ -24,6 +24,12 @@ struct IsReferenceCountedObjectPtr : std::false_type { };
 template <typename T>
 struct IsReferenceCountedObjectPtr<juce::ReferenceCountedObjectPtr<T>> : std::true_type { };
 
+template <typename T>
+struct IsReferenceCountedArray : std::false_type { };
+
+template <typename T>
+struct IsReferenceCountedArray<juce::ReferenceCountedArray<T>> : std::true_type { };
+
 // Check For Vector
 template <typename T>
 struct IsVector : std::false_type { };
@@ -186,24 +192,16 @@ struct Fifo
             }
             else
             {
-                if constexpr (IsVector<T>::value)
+                if constexpr (IsReferenceCountedArray<T>::value)
                 {
-                    if (t.size() < buffer[index].size())
-                    {
-                        // Need to Copy
-                        t = buffer[index];
-                    }
-                    else
-                    {
-                        // Can Swap
-                        std::swap(buffer[index], t);
-                    }
+                    std::swap(buffer[index], t);
+                    jassert (buffer[index].size() == 0);
                 }
                 else
                 {
-                    if constexpr (IsAudioBuffer<T>::value)
+                    if constexpr (IsVector<T>::value)
                     {
-                        if (t.getNumSamples() < buffer[index].getNumSamples())
+                        if (t.size() < buffer[index].size())
                         {
                             // Need to Copy
                             t = buffer[index];
@@ -216,11 +214,28 @@ struct Fifo
                     }
                     else
                     {
-                        // Blindly Swap
-                        std::swap(buffer[index], t);
-                        jassertfalse; // To see if anything ends up here
+                        if constexpr (IsAudioBuffer<T>::value)
+                        {
+                            if (t.getNumSamples() < buffer[index].getNumSamples())
+                            {
+                                // Need to Copy
+                                t = buffer[index];
+                            }
+                            else
+                            {
+                                // Can Swap
+                                std::swap(buffer[index], t);
+                            }
+                        }
+                        else
+                        {
+                            // Blindly Swap
+                            std::swap(buffer[index], t);
+                            jassertfalse; // To see if anything ends up here
+                        }
                     }
                 }
+                
             }
             
             return true;

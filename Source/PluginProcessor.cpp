@@ -10,7 +10,7 @@
 
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
-#include "FilterHelperFunctions.h"
+
 
 
 //==============================================================================
@@ -182,27 +182,54 @@ void FreshwaterAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
     outputGain.updateGain();
     compressor.updateCompressorSettings();
     
-    updateParams();
-    
-    refreshFilters();
+    updateFilterParams();
     
     // Process
     inputGain.process(buffer);
     compressor.process(buffer);
 
     // Process The Chain
-    auto filterBlock = juce::dsp::AudioBlock<float> (buffer);
-    
-    auto leftBlock = filterBlock.getSingleChannelBlock(0);
-    auto rightBlock = filterBlock.getSingleChannelBlock(1);
-    
-    auto leftContext = juce::dsp::ProcessContextReplacing<float> (leftBlock);
-    auto rightContext = juce::dsp::ProcessContextReplacing<float> (rightBlock);
-    
-    leftChain.process(leftContext);
-    rightChain.process(rightContext);
+    juce::dsp::AudioBlock<float> block(buffer);
+
+    auto maxChunkSize = 32;
+    for (auto offset = 0; offset < block.getNumSamples();)
+    {
+        auto samplesToProcess = static_cast<int>(block.getNumSamples() - offset);
+        auto chunkSize = samplesToProcess > maxChunkSize ? maxChunkSize : samplesToProcess;
+
+        // Loop through filters and call performInnerLoopFilterUpdate()
+        updateFilterState(chunkSize);
+
+        // Process The Audio
+        auto subBlock = block.getSubBlock(offset, chunkSize);
+        auto leftSubBlock = subBlock.getSingleChannelBlock(0);
+        auto rightSubBlock = subBlock.getSingleChannelBlock(1);
+
+        juce::dsp::ProcessContextReplacing<float> leftContext (leftSubBlock);
+        juce::dsp::ProcessContextReplacing<float> rightContext (rightSubBlock);
+
+        leftChain.process(leftContext);
+        rightChain.process(rightContext);
+
+        // Update Offset
+        offset += chunkSize;
+    }
     
     outputGain.process(buffer);
+}
+
+void FreshwaterAudioProcessor::updateFilterState(const int chunkSize)
+{
+    updateSingleFilterState<0>(true, chunkSize);
+    updateSingleFilterState<1>(true, chunkSize);
+    updateSingleFilterState<2>(true, chunkSize);
+}
+
+void FreshwaterAudioProcessor::updateFilterParams()
+{
+    updateSingleFilterParams<0, FilterParameters>();
+    updateSingleFilterParams<1, FilterParameters>();
+    updateSingleFilterParams<2, FilterParameters>();
 }
 
 //==============================================================================
@@ -213,8 +240,8 @@ bool FreshwaterAudioProcessor::hasEditor() const
 
 juce::AudioProcessorEditor* FreshwaterAudioProcessor::createEditor()
 {
-//    return new FreshwaterAudioProcessorEditor (*this);
-    return new juce::GenericAudioProcessorEditor(*this);
+    return new FreshwaterAudioProcessorEditor (*this);
+//    return new juce::GenericAudioProcessorEditor(*this);
 }
 
 //==============================================================================
@@ -237,36 +264,6 @@ void FreshwaterAudioProcessor::setStateInformation (const void* data, int sizeIn
         apvts.replaceState(tree);
         // This updates the apvts. In the processBlock, any apvts changes will be automatically applied.
     }
-}
-
-
-void FreshwaterAudioProcessor::createCutParams(juce::AudioProcessorValueTreeState::ParameterLayout &layout, const int filterNum, const bool isLowCut)
-{
-    layout.add(std::make_unique<juce::AudioParameterBool>(getBypassParamName(filterNum),
-                                                          getBypassParamName(filterNum),
-                                                          false));
-    
-    layout.add(std::make_unique<juce::AudioParameterFloat>(getFreqParamName(filterNum),
-                                                           getFreqParamName(filterNum),
-                                                           juce::NormalisableRange<float>(20.f, 20000.f, 1.f, 0.25f),
-                                                                500.f));
-    
-    layout.add(std::make_unique<juce::AudioParameterBool>(getTypeParamName(filterNum),
-                                                          getTypeParamName(filterNum),
-                                                          isLowCut));
-    
-    juce::StringArray stringArray;
-    
-    // Orders 1 through 8
-    for (auto i=1; i<9; ++i)
-    {
-        stringArray.add(juce::String(i));
-    }
-    
-    layout.add(std::make_unique<juce::AudioParameterChoice>(getQualityParamName(filterNum),
-                                                            getQualityParamName(filterNum),
-                                                            stringArray,
-                                                            0));
 }
 
 
@@ -363,44 +360,12 @@ juce::AudioProcessorValueTreeState::ParameterLayout FreshwaterAudioProcessor::cr
 {
     juce::AudioProcessorValueTreeState::ParameterLayout layout;
     
-    /*
-     I want to add the params for:
-        - 1 LowCut Filter
-            - Freq
-            - Byp
-            - Order
-            - IsLowCut = True
-        - 1 MultiType Filter
-            - Freq
-            - Byp
-            - Quality
-            - gain
-        - 1 HighCut Filter
-            - Freq
-            - Byp
-            - Order
-            - IsLowCut = False
-     */
-    
     createCompressorParams(layout);
     
     createGainParams(layout);
     
     for ( int i = 0; i < chainLength; ++i)
     {
-        // Add Low Cut Params to layout
-        if (i == 0)
-        {
-            createCutParams(layout, i, true);
-            continue;
-        }
-        // Add High Cut Params
-        if ( i == (chainLength-1) )
-        {
-            createCutParams(layout, i, false);
-            continue;
-        }
-        
         createFilterParams(layout, i);
     }
     
@@ -429,311 +394,7 @@ void FreshwaterAudioProcessor::attachCompressorGainParams ()
     // Gain
     floatHelper(inputGain.gainInDb, getInputGainParamName());
     floatHelper(outputGain.gainInDb, getOutputGainParamName());
-    
-    
-    
 }
-
-
-
-FilterParameters FreshwaterAudioProcessor::getFilterParams(int bandNum)
-{
-    FilterParameters params;
-
-    params.sampleRate = getSampleRate();
-    
-    if (auto* p = dynamic_cast<juce::AudioParameterFloat*>(apvts.getParameter(getFreqParamName(bandNum))))
-    {
-        params.frequency = p->get();
-    }
-    
-    if (auto* p = dynamic_cast<juce::AudioParameterBool*>(apvts.getParameter(getBypassParamName(bandNum))))
-    {
-        params.bypassed = p->get();
-    }
-    
-    if (auto* p = dynamic_cast<juce::AudioParameterFloat*>(apvts.getParameter(getQualityParamName(bandNum))))
-    {
-        params.quality = p->get();
-    }
-
-    if (auto* p = dynamic_cast<juce::AudioParameterChoice*>(apvts.getParameter(getTypeParamName(bandNum))))
-    {
-        params.filterType = static_cast<FilterInfo::FilterType>(p->getIndex());
-    }
-
-    if (auto* p = dynamic_cast<juce::AudioParameterFloat*>(apvts.getParameter(getGainParamName(bandNum))))
-    {
-        params.gainInDb = p->get();
-    }
-    
-    return params;
-}
-
-
-HighCutLowCutParameters FreshwaterAudioProcessor::getCutParams(int bandNum)
-{
-    HighCutLowCutParameters params;
-    
-    params.sampleRate = getSampleRate();
-    
-    if (auto* p = dynamic_cast<juce::AudioParameterChoice*>(apvts.getParameter(getQualityParamName(bandNum))))
-    {
-        params.order = p->getIndex()+1;
-    }
-//    params.order = 1;
-    
-    if (auto* p = dynamic_cast<juce::AudioParameterFloat*>(apvts.getParameter(getFreqParamName(bandNum))))
-    {
-        params.frequency = p->get();
-    }
-    
-    if (auto* p = dynamic_cast<juce::AudioParameterBool*>(apvts.getParameter(getBypassParamName(bandNum))))
-    {
-        params.bypassed = p->get();
-    }
-    
-    if (auto* p = dynamic_cast<juce::AudioParameterBool*>(apvts.getParameter(getTypeParamName(bandNum))))
-    {
-        params.isLowcut = p->get();
-    }
-    
-    return params;
-}
-
-
-
-void FreshwaterAudioProcessor::setChainBypass(const bool isBypassed, FilterPosition pos)
-{
-    switch (pos)
-    {
-        case FilterPosition::LowCut:
-            leftChain.template setBypassed<0>(isBypassed);
-            rightChain.template setBypassed<0>(isBypassed);
-            break;
-        case FilterPosition::Multi1:
-            leftChain.template setBypassed<1>(isBypassed);
-            rightChain.template setBypassed<1>(isBypassed);
-            break;
-        case FilterPosition::HighCut:
-            leftChain.template setBypassed<2>(isBypassed);
-            rightChain.template setBypassed<2>(isBypassed);
-            break;
-    }
-}
-
-
-void FreshwaterAudioProcessor::updateParams()
-{
-    // Check if params have changed if so, update via fcg
-    /*
-     Low Cut
-     */
-    // Check for not bypassed
-    bool filterBypassed = dynamic_cast<juce::AudioParameterBool*>(apvts.getParameter(getBypassParamName(FilterPosition::LowCut)))->get();
-    if ( !filterBypassed )
-    {
-        setChainBypass(false, FilterPosition::LowCut);
-        
-        auto tempHighCutLowCutParams = getCutParams(0);
-        if (currentLowCutParams != tempHighCutLowCutParams)
-        {
-            // if changed, calc new Coeffs
-//            DBG("Updating Coefficients");
-            currentLowCutParams = tempHighCutLowCutParams;
-//            updateLowCutCoefficients(currentLowCutParams);
-            leftLowCutFCG.changeParameters(currentLowCutParams);
-            rightLowCutFCG.changeParameters(currentLowCutParams);
-        }
-    }
-    else
-    {
-        setChainBypass(true, FilterPosition::LowCut);
-    }
-    
-    /*
-     Multi1
-     */
-    filterBypassed = dynamic_cast<juce::AudioParameterBool*>(apvts.getParameter(getBypassParamName(FilterPosition::Multi1)))->get();
-    if ( !filterBypassed )
-    {
-        setChainBypass(false, FilterPosition::Multi1);
-        
-        // Middle Filter Params
-        auto tempFilterParams = getFilterParams(FilterPosition::Multi1);
-        
-        if (currentFilterParams != tempFilterParams)
-        {
-            // if changed, calc new Coeffs
-            currentFilterParams = tempFilterParams;
-            leftFilterFCG.changeParameters(currentFilterParams);
-            rightFilterFCG.changeParameters(currentFilterParams);
-            
-            
-        }
-    }
-    else
-    {
-        setChainBypass(true, FilterPosition::Multi1);
-    }
-    
-    /*
-     High Cut Filter
-     */
-    filterBypassed = dynamic_cast<juce::AudioParameterBool*>(apvts.getParameter(getBypassParamName(FilterPosition::HighCut)))->get();
-    if ( !filterBypassed)
-    {
-        setChainBypass(false, FilterPosition::HighCut);
-        
-        auto tempHighCutLowCutParams = getCutParams(FilterPosition::HighCut);
-        if (currentHighCutParams != tempHighCutLowCutParams)
-        {
-            // if changed, calc new Coeffs
-            currentHighCutParams = tempHighCutLowCutParams;
-//            updateHighCutCoefficients(currentHighCutParams);
-            leftHighCutFCG.changeParameters(currentHighCutParams);
-            rightHighCutFCG.changeParameters(currentHighCutParams);
-        }
-    }
-    else
-    {
-        setChainBypass(true, FilterPosition::HighCut);
-    }
-}
-
-
-void FreshwaterAudioProcessor::refreshFilters()
-{
-    refreshLowCutFilter(leftLowCutFifo,
-                        leftChain,
-                        leftLowCutReleasePool);
-    refreshLowCutFilter(rightLowCutFifo,
-                        rightChain,
-                        rightLowCutReleasePool);
-    
-    refreshHighCutFilter(leftHighCutFifo,
-                        leftChain,
-                        leftHighCutReleasePool);
-    refreshHighCutFilter(rightHighCutFifo,
-                        rightChain,
-                        rightHighCutReleasePool);
-    
-    // Peak Filter
-    CoefficientsPtr ptr;
-    
-    if ( leftFilterCoeffFifo.getNumAvailableForReading() > 0 )
-    {
-        auto& leftFilter = leftChain.template get<FilterPosition::Multi1>();
-        if ( leftFilterCoeffFifo.pull(ptr) )
-        {
-            leftFilterReleasePool.add(ptr);
-            *(leftFilter.coefficients) = *ptr;
-        }
-    }
-    
-    if ( rightFilterCoeffFifo.getNumAvailableForReading() > 0 )
-    {
-        auto& rightFilter = rightChain.template get<FilterPosition::Multi1>();
-        if ( rightFilterCoeffFifo.pull(ptr) )
-        {
-            rightFilterReleasePool.add(ptr);
-            *(rightFilter.coefficients) = *ptr;
-        }
-    }
-}
-
-
-void FreshwaterAudioProcessor::refreshLowCutFilter (Fifo<juce::ReferenceCountedArray<CutCoeffs>, 32>& cutFifo,
-                                                          FilterChain& chain,
-                                                          ReleasePool<CoefficientsPtr>& cutPool)
-{
-    // Refresh Low Cut
-    // Left
-    if ( cutFifo.getNumAvailableForReading() > 0 )
-    {
-        auto& LowCutFilterChain = chain.template get<FilterPosition::LowCut>();
-        juce::ReferenceCountedArray<juce::dsp::IIR::Coefficients<float>> tempArray {};
-    
-        if ( cutFifo.pull(tempArray) )
-        {
-            auto tempSize = tempArray.size();
-            if ( tempSize > 0)
-            {
-                LowCutFilterChain.setBypassed<0>(true);
-                LowCutFilterChain.setBypassed<1>(true);
-                LowCutFilterChain.setBypassed<2>(true);
-                LowCutFilterChain.setBypassed<3>(true);
-  
-                switch (tempSize)
-                {
-                    case 4:
-                        LowCutFilterChain.setBypassed<3>(false);
-                        *LowCutFilterChain.get<3>().coefficients = *tempArray[3];
-                        cutPool.add(tempArray[3]);
-                    case 3:
-                        LowCutFilterChain.setBypassed<2>(false);
-                        *LowCutFilterChain.get<2>().coefficients = *tempArray[2];
-                        cutPool.add(tempArray[2]);
-                    case 2:
-                        LowCutFilterChain.setBypassed<1>(false);
-                        *LowCutFilterChain.get<1>().coefficients = *tempArray[1];
-                        cutPool.add(tempArray[1]);
-                    case 1:
-                        LowCutFilterChain.setBypassed<0>(false);
-                        *LowCutFilterChain.get<0>().coefficients = *tempArray[0];
-                        cutPool.add(tempArray[0]);
-                }
-            }
-        }
-    }
-}
-
-
-void FreshwaterAudioProcessor::refreshHighCutFilter (Fifo<juce::ReferenceCountedArray<CutCoeffs>, 32>& cutFifo,
-                                                          FilterChain& chain,
-                                                          ReleasePool<CoefficientsPtr>& cutPool)
-{
-    // Refresh Low Cut
-    // Left
-    if ( cutFifo.getNumAvailableForReading() > 0 )
-    {
-        auto& LowCutFilterChain = chain.template get<FilterPosition::HighCut>();
-        juce::ReferenceCountedArray<juce::dsp::IIR::Coefficients<float>> tempArray {};
-    
-        if ( cutFifo.pull(tempArray) )
-        {
-            auto tempSize = tempArray.size();
-            if ( tempSize > 0)
-            {
-                LowCutFilterChain.setBypassed<0>(true);
-                LowCutFilterChain.setBypassed<1>(true);
-                LowCutFilterChain.setBypassed<2>(true);
-                LowCutFilterChain.setBypassed<3>(true);
-  
-                switch (tempSize)
-                {
-                    case 4:
-                        LowCutFilterChain.setBypassed<3>(false);
-                        *LowCutFilterChain.get<3>().coefficients = *tempArray[3];
-                        cutPool.add(tempArray[3]);
-                    case 3:
-                        LowCutFilterChain.setBypassed<2>(false);
-                        *LowCutFilterChain.get<2>().coefficients = *tempArray[2];
-                        cutPool.add(tempArray[2]);
-                    case 2:
-                        LowCutFilterChain.setBypassed<1>(false);
-                        *LowCutFilterChain.get<1>().coefficients = *tempArray[1];
-                        cutPool.add(tempArray[1]);
-                    case 1:
-                        LowCutFilterChain.setBypassed<0>(false);
-                        *LowCutFilterChain.get<0>().coefficients = *tempArray[0];
-                        cutPool.add(tempArray[0]);
-                }
-            }
-        }
-    }
-}
-
 //==============================================================================
 // This creates new instances of the plugin..
 juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()

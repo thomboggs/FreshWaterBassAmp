@@ -125,7 +125,7 @@ struct Decibel
 
     void setGain(FloatType gain)
     {
-        gainInDb = juce::Decibels::gainToDecibels(gain)
+        gainInDb = juce::Decibels::gainToDecibels(gain);
     }
 
     void setDb(FloatType db)

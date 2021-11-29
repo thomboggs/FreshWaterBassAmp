@@ -19,6 +19,8 @@
 #include "ReleasePool.h"
 #include "Compressor.h"
 #include "Gain.h"
+#include "FilterLink.h"
+#include "FilterHelperFunctions.h"
 
 
 //==============================================================================
@@ -78,59 +80,127 @@ private:
     
     void attachCompressorGainParams ();
     
-    enum FilterPosition
-    {
-        LowCut,
-        Multi1,
-        HighCut
-    };
-    
-    HighCutLowCutParameters currentLowCutParams, currentHighCutParams;
-    FilterParameters currentFilterParams;
+//    enum FilterPosition
+//    {
+//        LowCut,
+//        Multi1,
+//        HighCut
+//    };
+//    
+//    HighCutLowCutParameters currentLowCutParams, currentHighCutParams;
+//    FilterParameters currentFilterParams;
     
     using Filter = juce::dsp::IIR::Filter<float>;
-//    using FilterChain = juce::dsp::ProcessorChain<Filter, Filter, Filter>;
-    using CutFilter = juce::dsp::ProcessorChain<Filter, Filter, Filter, Filter>;
-    using FilterChain = juce::dsp::ProcessorChain<CutFilter, Filter, CutFilter>;
+    using CoefficientsPtr = juce::dsp::IIR::Filter<float>::CoefficientsPtr;
+    
+    using SingleFilter = FilterLink<Filter, CoefficientsPtr, FilterParameters, CoefficientsMaker<float>>;
+    using Chain = juce::dsp::ProcessorChain<SingleFilter,
+                                            SingleFilter,
+                                            SingleFilter>;
     static const int chainLength { 3 };
     
-    FilterChain leftChain, rightChain;
+    Chain leftChain, rightChain;
     
-    using CoefficientsPtr = juce::dsp::IIR::Filter<float>::CoefficientsPtr;
-    using CutCoeffs = juce::dsp::IIR::Coefficients<float>;
+    void initializeFilters (const double sampleRate, const float rampTime);
     
-    void setChainBypass(const bool isBypassed, FilterPosition pos);
+    template <int Index, typename ParamType>
+    void initializeFilter (const double sampleRate, const float rampTime);
     
-    void updateParams ();
+    template <typename ParamType>
+    ParamType getParams (const int bandNum, const double sampleRate);
     
-    void refreshLowCutFilter (Fifo<juce::ReferenceCountedArray<CutCoeffs>, 32>& cutFifo,
-                              FilterChain& chain,
-                              ReleasePool<CoefficientsPtr>& cutPool);
-    void refreshHighCutFilter (Fifo<juce::ReferenceCountedArray<CutCoeffs>, 32>& cutFifo,
-                              FilterChain& chain,
-                              ReleasePool<CoefficientsPtr>& cutPool);
-    void refreshFilters ();
+    template <int Index>
+    void setChainBypass(const bool isBypassed);
     
-    HighCutLowCutParameters getCutParams (int bandNum);
-    FilterParameters getFilterParams (int bandNum);
+    void updateFilterParams ();
     
+    template <int Index, typename ParamType>
+    void updateSingleFilterParams ();
     
-    Fifo<juce::ReferenceCountedArray<CutCoeffs>, 32> leftLowCutFifo, rightLowCutFifo;
-    Fifo<juce::ReferenceCountedArray<CutCoeffs>, 32> leftHighCutFifo, rightHighCutFifo;
-    Fifo<CoefficientsPtr, 32> leftFilterCoeffFifo, rightFilterCoeffFifo;
+    void updateFilterState (const int chunkSize);
     
-    FilterCoefficientGenerator<CoefficientsPtr, FilterParameters, CoefficientsMaker<float>, 32> leftFilterFCG { leftFilterCoeffFifo , "Left Filter Thread"};
-    FilterCoefficientGenerator<CoefficientsPtr, FilterParameters, CoefficientsMaker<float>, 32> rightFilterFCG { rightFilterCoeffFifo , "Right Filter Thread"};
-    FilterCoefficientGenerator<juce::ReferenceCountedArray<CutCoeffs>, HighCutLowCutParameters, CoefficientsMaker<float>, 32> leftLowCutFCG {leftLowCutFifo , "Left LowCut Thread" };
-    FilterCoefficientGenerator<juce::ReferenceCountedArray<CutCoeffs>, HighCutLowCutParameters, CoefficientsMaker<float>, 32> rightLowCutFCG {rightLowCutFifo , "Right LowCut Thread" };
-    FilterCoefficientGenerator<juce::ReferenceCountedArray<CutCoeffs>, HighCutLowCutParameters, CoefficientsMaker<float>, 32> leftHighCutFCG {leftHighCutFifo , "Left HighCut Thread" };
-    FilterCoefficientGenerator<juce::ReferenceCountedArray<CutCoeffs>, HighCutLowCutParameters, CoefficientsMaker<float>, 32> rightHighCutFCG {rightHighCutFifo , "Right HighCut Thread" };
-    
-    ReleasePool<CoefficientsPtr> leftFilterReleasePool { }, rightFilterReleasePool { };
-    ReleasePool<CoefficientsPtr> leftLowCutReleasePool { }, rightLowCutReleasePool { };
-    ReleasePool<CoefficientsPtr> leftHighCutReleasePool { }, rightHighCutReleasePool { };
+    template <int Index>
+    void updateSingleFilterState (const bool onRealTimeThread, const int chunkSize);
     
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (FreshwaterAudioProcessor)
 };
 
+
+//==============================================================================
+/*
+        Template Function Definition
+ */
+//==============================================================================
+
+template<typename ParamType>
+ParamType FreshwaterAudioProcessor::getParams (const int bandNum, const double sampleRate)
+{
+    ParamType params;
+    
+    params.sampleRate = sampleRate;
+    
+    if constexpr (std::is_same_v<ParamType, FilterParameters>)
+    {
+        if (auto* p = dynamic_cast<juce::AudioParameterChoice*>(apvts.getParameter(getTypeParamName(bandNum))))
+        {
+            params.filterType = static_cast<FilterInfo::FilterType>(p->getIndex());
+        }
+
+        if (auto* p = dynamic_cast<juce::AudioParameterFloat*>(apvts.getParameter(getGainParamName(bandNum))))
+        {
+            params.gain.setDb(p->get());
+        }
+    }
+    
+    if (auto* p = dynamic_cast<juce::AudioParameterFloat*>(apvts.getParameter(getQualityParamName(bandNum))))
+    {
+        params.quality = p->get();
+    }
+    
+    if (auto* p = dynamic_cast<juce::AudioParameterFloat*>(apvts.getParameter(getFreqParamName(bandNum))))
+    {
+        params.frequency = p->get();
+    }
+    
+    if (auto* p = dynamic_cast<juce::AudioParameterBool*>(apvts.getParameter(getBypassParamName(bandNum))))
+    {
+        params.bypassed = p->get();
+    }
+    
+    return params;
+}
+
+
+template<int Index>
+void FreshwaterAudioProcessor::setChainBypass(const bool isBypassed)
+{
+    leftChain.template setBypassed<Index>(isBypassed);
+    rightChain.template setBypassed<Index>(isBypassed);
+}
+
+
+template <int Index, typename ParamType>
+void FreshwaterAudioProcessor::initializeFilter (const double sampleRate, const float rampTime)
+{
+    auto tempCutParams = getParams<ParamType>(Index, sampleRate);
+    leftChain.get<Index>().initialize(tempCutParams, rampTime, false, sampleRate);
+    rightChain.get<Index>().initialize(tempCutParams, rampTime, false, sampleRate);
+    
+}
+
+
+template <int Index, typename ParamType>
+void FreshwaterAudioProcessor::updateSingleFilterParams ()
+{
+    auto sampleRate = getSampleRate();
+    leftChain.get<Index>().performPreloopUpdate(getParams<ParamType>(Index, sampleRate));
+    rightChain.get<Index>().performPreloopUpdate(getParams<ParamType>(Index, sampleRate));
+}
+
+template <int Index>
+void FreshwaterAudioProcessor::updateSingleFilterState (const bool onRealTimeThread, const int chunkSize)
+{
+    leftChain.get<Index>().performInnerLoopFilterUpdate(onRealTimeThread, chunkSize);
+    rightChain.get<Index>().performInnerLoopFilterUpdate(onRealTimeThread, chunkSize);
+}

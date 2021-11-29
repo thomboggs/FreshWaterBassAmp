@@ -52,12 +52,12 @@ struct CoefficientsMaker
         };
     }
     
-    static Coefficients calcFilterCoefficients (const FilterParameters& filterParams)
+    static Coefficients calcCoefficients (const FilterParameters& filterParams)
     {
-        return calcCoefficientsHelper(filterParams.filterType, filterParams.frequency, filterParams.quality, filterParams.gainInDb, filterParams.sampleRate);
+        return calcCoefficientsHelper(filterParams.filterType, filterParams.frequency, filterParams.quality, filterParams.gain.getDb(), filterParams.sampleRate);
     }
     
-    static juce::ReferenceCountedArray<IIRCoeffs> calcCutCoefficients (const HighCutLowCutParameters& cutParams)
+    static juce::ReferenceCountedArray<IIRCoeffs> calcCoefficients (const HighCutLowCutParameters& cutParams)
     {
         if (cutParams.isLowcut)
             return juce::dsp::FilterDesign<FloatType>::designIIRHighpassHighOrderButterworthMethod(cutParams.frequency, cutParams.sampleRate, cutParams.order);

@@ -16,12 +16,14 @@ FreshwaterAudioProcessorEditor::FreshwaterAudioProcessorEditor (FreshwaterAudioP
     : AudioProcessorEditor (&p)
 , processor (p)
 , lowFreqSlider(*processor.apvts.getParameter(getFreqParamName(0)), "Hz")
-, lowOrderSlider(*processor.apvts.getParameter(getQualityParamName(0)), "")
+, lowGainSlider(*processor.apvts.getParameter(getGainParamName(0)), "dB")
+, lowQualitySlider(*processor.apvts.getParameter(getQualityParamName(0)), "")
 , midFreqSlider(*processor.apvts.getParameter(getFreqParamName(1)), "Hz")
 , midGainSlider(*processor.apvts.getParameter(getGainParamName(1)), "dB")
 , midQualitySlider(*processor.apvts.getParameter(getQualityParamName(1)), "")
 , highFreqSlider(*processor.apvts.getParameter(getFreqParamName(2)), "Hz")
-, highOrderSlider(*processor.apvts.getParameter(getQualityParamName(2)), "")
+, highGainSlider(*processor.apvts.getParameter(getGainParamName(2)), "dB")
+, highQualitySlider(*processor.apvts.getParameter(getQualityParamName(2)), "")
 , compAttackSlider(*processor.apvts.getParameter(getCompAttackParamName()), "ms")
 , compReleaseSlider(*processor.apvts.getParameter(getCompReleaseParamName()), "ms")
 , compThresholdSlider(*processor.apvts.getParameter(getCompThresholdParamName()), "dB")
@@ -29,12 +31,14 @@ FreshwaterAudioProcessorEditor::FreshwaterAudioProcessorEditor (FreshwaterAudioP
 , inputGainSliderAttachment(processor.apvts, getInputGainParamName(), inputGainSlider)
 , outputGainSliderAttachment(processor.apvts, getOutputGainParamName(), outputGainSlider)
 , lowFreqSliderAttachment(processor.apvts, getFreqParamName(0), lowFreqSlider)
-, lowOrderSliderAttachment(processor.apvts, getQualityParamName(0), lowOrderSlider)
+, lowGainSliderAttachment(processor.apvts, getGainParamName(0), lowGainSlider)
+, lowQualitySliderAttachment(processor.apvts, getQualityParamName(0), lowQualitySlider)
 , midFreqSliderAttachment(processor.apvts, getFreqParamName(1), midFreqSlider)
 , midGainSliderAttachment(processor.apvts, getGainParamName(1), midGainSlider)
 , midQualitySliderAttachment(processor.apvts, getQualityParamName(1), midQualitySlider)
 , highFreqSliderAttachment(processor.apvts, getFreqParamName(2), highFreqSlider)
-, highOrderSliderAttachment(processor.apvts, getQualityParamName(2), highOrderSlider)
+, highGainSliderAttachment(processor.apvts, getGainParamName(2), highGainSlider)
+, highQualitySliderAttachment(processor.apvts, getQualityParamName(2), highQualitySlider)
 , compAttackSliderAttachment(processor.apvts, getCompAttackParamName(), compAttackSlider)
 , compReleaseSliderAttachment(processor.apvts, getCompReleaseParamName(), compReleaseSlider)
 , compThresholdSliderAttachment(processor.apvts, getCompThresholdParamName(), compThresholdSlider)
@@ -104,6 +108,7 @@ void FreshwaterAudioProcessorEditor::resized()
     auto filterArea = bounds.removeFromLeft(bounds.getWidth() * 0.8);
     
     // Compressor Layout
+    compressorArea.removeFromTop(30);
     auto compBypassArea = compressorArea.removeFromBottom(compressorArea.getHeight() * 0.2);
     auto compAreaLeft = compressorArea.removeFromLeft(compressorArea.getWidth() * 0.5);
     auto compAreaTopLeft = compAreaLeft.removeFromTop(compAreaLeft.getHeight() * 0.5);
@@ -135,12 +140,14 @@ void FreshwaterAudioProcessorEditor::resized()
     highFilterSectionLabel.setBounds(highFilterTitleArea);
     
     // Low Filter
-    auto lowFreqArea = lowFilterArea.removeFromTop(lowFilterArea.getHeight() * 0.33);
-    auto lowOrderArea = lowFilterArea.removeFromTop(lowFilterArea.getHeight() * 0.5);
+    auto lowFreqArea = lowFilterArea.removeFromTop(lowFilterArea.getHeight() * 0.25);
+    auto lowGainArea = lowFilterArea.removeFromTop(lowFilterArea.getHeight() * 0.33);
+    auto lowQualityArea = lowFilterArea.removeFromTop(lowFilterArea.getHeight() * 0.5);
     auto lowBypassArea = lowFilterArea;
     
     lowFreqSlider.setBounds(lowFreqArea);
-    lowOrderSlider.setBounds(lowOrderArea);
+    lowGainSlider.setBounds(lowGainArea);
+    lowQualitySlider.setBounds(lowQualityArea);
     lowBypassButton.setBounds(lowBypassArea);
     
     // mid filter
@@ -155,12 +162,14 @@ void FreshwaterAudioProcessorEditor::resized()
     midBypassButton.setBounds(midBypassArea);
     
     // high Filter
-    auto highFreqArea = highFilterArea.removeFromTop(highFilterArea.getHeight() * 0.33);
-    auto highOrderArea = highFilterArea.removeFromTop(highFilterArea.getHeight() * 0.5);
+    auto highFreqArea = highFilterArea.removeFromTop(highFilterArea.getHeight() * 0.25);
+    auto highGainArea = highFilterArea.removeFromTop(highFilterArea.getHeight() * 0.33);
+    auto highQualityArea = highFilterArea.removeFromTop(highFilterArea.getHeight() * 0.5);
     auto highBypassArea = highFilterArea;
     
     highFreqSlider.setBounds(highFreqArea);
-    highOrderSlider.setBounds(highOrderArea);
+    highGainSlider.setBounds(highGainArea);
+    highQualitySlider.setBounds(highQualityArea);
     highBypassButton.setBounds(highBypassArea);
     
     // Output Gain
@@ -177,12 +186,14 @@ std::vector<juce::Component*> FreshwaterAudioProcessorEditor::getComps()
         &inputGainSlider,
         &outputGainSlider,
         &lowFreqSlider,
-        &lowOrderSlider,
+        &lowGainSlider,
+        &lowQualitySlider,
         &midFreqSlider,
         &midGainSlider,
         &midQualitySlider,
         &highFreqSlider,
-        &highOrderSlider,
+        &highGainSlider,
+        &highQualitySlider,
         &compBypassButton,
         &lowBypassButton,
         &midBypassButton,
@@ -212,12 +223,14 @@ std::vector<juce::Slider*> FreshwaterAudioProcessorEditor::getCompFilterSliders(
     return
     {
         &lowFreqSlider,
-        &lowOrderSlider,
+        &lowGainSlider,
+        &lowQualitySlider,
         &midFreqSlider,
         &midGainSlider,
         &midQualitySlider,
         &highFreqSlider,
-        &highOrderSlider,
+        &highGainSlider,
+        &highQualitySlider,
         &compAttackSlider,
         &compReleaseSlider,
         &compThresholdSlider,

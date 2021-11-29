@@ -10,6 +10,7 @@
 
 #pragma once
 #include "FilterInfo.h"
+#include "Decibel.h"
 
 
 struct FilterParametersBase
@@ -19,8 +20,8 @@ struct FilterParametersBase
     float quality { 1.0 };
     double sampleRate { 0 };
     
-    inline friend bool operator== (const FilterParametersBase& lhs, const FilterParametersBase& rhs);
-    inline friend bool operator!= (const FilterParametersBase& lhs, const FilterParametersBase& rhs);
+    friend bool operator== (const FilterParametersBase& lhs, const FilterParametersBase& rhs);
+    friend bool operator!= (const FilterParametersBase& lhs, const FilterParametersBase& rhs);
     
 };
 
@@ -28,19 +29,19 @@ struct FilterParameters : FilterParametersBase
 {
     FilterParameters () = default;
     FilterParameters ( float frequency, bool bypassed, float quality, double sampleRate, FilterInfo::FilterType filterType, float gainInDb) :
-        filterType(filterType), gainInDb(gainInDb)
+        filterType(filterType), gain(gainInDb)
     {
         this->frequency = frequency;
         this->bypassed = bypassed;
         this->quality = quality;
         this->sampleRate = sampleRate;
     }
-    inline friend bool operator== (const FilterParameters& lhs, const FilterParameters& rhs);
-    inline friend bool operator!= (const FilterParameters& lhs, const FilterParameters& rhs);
+    friend bool operator== (const FilterParameters& lhs, const FilterParameters& rhs);
+    friend bool operator!= (const FilterParameters& lhs, const FilterParameters& rhs);
     
     // Member Variables
     FilterInfo::FilterType filterType { FilterInfo::FilterType::LowPass };
-    float gainInDb { 0 };
+    Decibel<float> gain { 0 };
 };
 
 struct HighCutLowCutParameters : FilterParametersBase
@@ -54,8 +55,8 @@ struct HighCutLowCutParameters : FilterParametersBase
         this->quality = quality;
         this->sampleRate = sampleRate;
     }
-    inline friend bool operator== (const HighCutLowCutParameters& lhs, const HighCutLowCutParameters& rhs);
-    inline friend bool operator!= (const HighCutLowCutParameters& lhs, const HighCutLowCutParameters& rhs);
+    friend bool operator== (const HighCutLowCutParameters& lhs, const HighCutLowCutParameters& rhs);
+    friend bool operator!= (const HighCutLowCutParameters& lhs, const HighCutLowCutParameters& rhs);
     
     // Member Variables
     int order { 1 };
@@ -64,54 +65,6 @@ struct HighCutLowCutParameters : FilterParametersBase
 
 
 
-
-inline bool operator== (const FilterParametersBase& lhs, const FilterParametersBase& rhs)
-{
-    return (lhs.frequency == rhs.frequency)
-            && (lhs.bypassed == rhs.bypassed)
-            && (lhs.quality == rhs.quality)
-            && (lhs.sampleRate == rhs.sampleRate);
-}
-
-
-inline bool operator!= (const FilterParametersBase& lhs, const FilterParametersBase& rhs)
-{
-    return !(lhs == rhs);
-}
-
-
-inline bool operator== (const FilterParameters& lhs, const FilterParameters& rhs)
-{
-    // check if base class members are the same
-    if ( static_cast<const FilterParametersBase&>(lhs) == static_cast<const FilterParametersBase&>(rhs))
-    {
-        return (lhs.filterType == rhs.filterType) && (lhs.gainInDb == rhs.gainInDb);
-    }
-    // If base class parameters aren't equal, return false
-    return false;
-}
-
-inline bool operator!= (const FilterParameters& lhs, const FilterParameters& rhs)
-{
-    return !(lhs == rhs);
-}
-
-
-inline bool operator== (const HighCutLowCutParameters& lhs, const HighCutLowCutParameters& rhs)
-{
-    // check if base class members are the same
-    if (static_cast<const FilterParametersBase&>(lhs) == static_cast<const FilterParametersBase&>(rhs))
-    {
-        return (lhs.order == rhs.order) && (lhs.isLowcut == rhs.isLowcut);
-    }
-    // If base class parameters aren't equal, return false
-    return false;
-}
-
-inline bool operator!= (const HighCutLowCutParameters& lhs, const HighCutLowCutParameters& rhs)
-{
-    return !(lhs == rhs);
-}
 
 
 

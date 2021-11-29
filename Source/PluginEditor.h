@@ -39,12 +39,14 @@ private:
     juce::Slider inputGainSlider, outputGainSlider;
     
     RotarySlider    lowFreqSlider,
-                    lowOrderSlider,
+                    lowGainSlider,
+                    lowQualitySlider,
                     midFreqSlider,
                     midGainSlider,
                     midQualitySlider,
                     highFreqSlider,
-                    highOrderSlider;
+                    highGainSlider,
+                    highQualitySlider;
     
     juce::ToggleButton compBypassButton, lowBypassButton, midBypassButton, highBypassButton;
     
@@ -76,12 +78,14 @@ private:
     sliderAttachment  inputGainSliderAttachment
                     , outputGainSliderAttachment
                     , lowFreqSliderAttachment
-                    , lowOrderSliderAttachment
+                    , lowGainSliderAttachment
+                    , lowQualitySliderAttachment
                     , midFreqSliderAttachment
                     , midGainSliderAttachment
                     , midQualitySliderAttachment
                     , highFreqSliderAttachment
-                    , highOrderSliderAttachment
+                    , highGainSliderAttachment
+                    , highQualitySliderAttachment
                     , compAttackSliderAttachment
                     , compReleaseSliderAttachment
                     , compThresholdSliderAttachment

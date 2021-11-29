@@ -36,7 +36,7 @@ struct ReleasePool : juce::Timer
     
     void add(Ptr ptr)
     {
-        DBG("Adding to Pool");
+//        DBG("Adding to Pool");
         // To check if on messagethread: use [static bool existsAndIsCurrentThread ()
         if ( juce::MessageManager::existsAndIsCurrentThread() )
         {
@@ -46,7 +46,7 @@ struct ReleasePool : juce::Timer
         }
         else
         {
-            DBG("Other Thread");
+//            DBG("Other Thread");
             // Add to Fifo
             if (releaseFifo.push(ptr) )
             {
@@ -101,7 +101,7 @@ private:
             deletionPool.push_back(ptr);
         }
     }
-    static const size_t capacity { 1024 };
+    static const size_t capacity { 16384 };
     std::vector<Ptr> deletionPool;
     Fifo<Ptr, capacity> releaseFifo;
     juce::Atomic<bool> addedToFifo;
