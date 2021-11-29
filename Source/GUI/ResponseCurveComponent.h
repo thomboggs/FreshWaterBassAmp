@@ -11,11 +11,12 @@
 #pragma once
 
 #include <JuceHeader.h>
+#include "../PluginProcessor.h"
 
 //==============================================================================
 /*
 */
-class ResponseCurveComponent  : public juce::Component
+class ResponseCurveComponent  : public  juce::Component
 {
 public:
     ResponseCurveComponent();
@@ -25,5 +26,7 @@ public:
     void resized() override;
 
 private:
+
+    
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ResponseCurveComponent)
 };

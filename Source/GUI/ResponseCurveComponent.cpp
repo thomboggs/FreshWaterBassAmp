@@ -32,14 +32,21 @@ void ResponseCurveComponent::paint (juce::Graphics& g)
        drawing code..
     */
 
-    g.fillAll (getLookAndFeel().findColour (juce::ResizableWindow::backgroundColourId));   // clear the background
+//    g.fillAll (getLookAndFeel().findColour (juce::ResizableWindow::backgroundColourId));   // clear the background
 
+    auto r = getLocalBounds();
+    r.reduce(10, 10);
+    
+    g.setColour (getLookAndFeel().findColour (juce::ResizableWindow::backgroundColourId));
+    g.fillRect(r);
+    
     g.setColour (juce::Colours::grey);
-    g.drawRect (getLocalBounds(), 1);   // draw an outline around the component
+    g.drawRect (r, 1);   // draw an outline around the component
+    
 
     g.setColour (juce::Colours::white);
     g.setFont (14.0f);
-    g.drawText ("ResponseCurveComponent", getLocalBounds(),
+    g.drawText ("ResponseCurveComponent", r,
                 juce::Justification::centred, true);   // draw some placeholder text
 }
 
