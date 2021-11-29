@@ -28,9 +28,4 @@ struct LookAndFeel : juce::LookAndFeel_V4
                            const juce::Slider::SliderStyle,
                            juce::Slider&) override;
     
-    void drawToggleButton (juce::Graphics& g,
-                           juce::ToggleButton& toggleButton,
-                           bool shouldDrawButtonAsHighlighted,
-                           bool shouldDrawButtonAsDown) override;
-    
 };
