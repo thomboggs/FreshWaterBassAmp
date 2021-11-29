@@ -9,11 +9,23 @@
 */
 
 #include "PluginEditor.h"
+#include "FilterHelperFunctions.h"
 
 //==============================================================================
 FreshwaterAudioProcessorEditor::FreshwaterAudioProcessorEditor (FreshwaterAudioProcessor& p)
     : AudioProcessorEditor (&p)
 , processor (p)
+, lowFreqSlider(*processor.apvts.getParameter(getFreqParamName(0)), "Hz")
+, lowOrderSlider(*processor.apvts.getParameter(getQualityParamName(0)), "")
+, midFreqSlider(*processor.apvts.getParameter(getFreqParamName(1)), "Hz")
+, midGainSlider(*processor.apvts.getParameter(getGainParamName(1)), "dB")
+, midQualitySlider(*processor.apvts.getParameter(getQualityParamName(1)), "")
+, highFreqSlider(*processor.apvts.getParameter(getFreqParamName(2)), "Hz")
+, highOrderSlider(*processor.apvts.getParameter(getQualityParamName(2)), "")
+, compAttackSlider(*processor.apvts.getParameter(getCompAttackParamName()), "ms")
+, compReleaseSlider(*processor.apvts.getParameter(getCompReleaseParamName()), "ms")
+, compThresholdSlider(*processor.apvts.getParameter(getCompThresholdParamName()), "dB")
+, compRatioSlider(*processor.apvts.getParameter(getCompRatioParamName()), "")
 , inputGainSliderAttachment(processor.apvts, getInputGainParamName(), inputGainSlider)
 , outputGainSliderAttachment(processor.apvts, getOutputGainParamName(), outputGainSlider)
 , lowFreqSliderAttachment(processor.apvts, getFreqParamName(0), lowFreqSlider)
@@ -50,8 +62,10 @@ FreshwaterAudioProcessorEditor::FreshwaterAudioProcessorEditor (FreshwaterAudioP
     for ( auto slider : getCompFilterSliders() )
     {
         slider->setSliderStyle(juce::Slider::SliderStyle::RotaryHorizontalVerticalDrag);
-        slider->setTextBoxStyle(juce::Slider::TextBoxBelow, true, 60, 20);
+        slider->setTextBoxStyle(juce::Slider::NoTextBox, true, 0, 0);
     }
+    
+    initializeSectionLabels();
 }
 
 FreshwaterAudioProcessorEditor::~FreshwaterAudioProcessorEditor()
@@ -62,7 +76,7 @@ FreshwaterAudioProcessorEditor::~FreshwaterAudioProcessorEditor()
 void FreshwaterAudioProcessorEditor::paint (juce::Graphics& g)
 {
     // (Our component is opaque, so we must completely fill the background with a solid colour)
-    g.fillAll (getLookAndFeel().findColour (juce::ResizableWindow::backgroundColourId));
+    g.fillAll (juce::Colour(3, 45, 184));
 
     
 }
@@ -71,12 +85,23 @@ void FreshwaterAudioProcessorEditor::resized()
 {
     auto bounds = getLocalBounds();
     
-    auto titleBar = bounds.removeFromTop(10);
-    auto inputGainArea = bounds.removeFromLeft(bounds.getWidth() * 0.125);
-    auto compressorArea = bounds.removeFromLeft(bounds.getWidth() * 0.28);
-    auto filterArea = bounds.removeFromLeft(bounds.getWidth() * 0.8);
+    auto titleBar = bounds.removeFromTop(30);
+    nameLabel.setBounds(titleBar);
     
+    auto inputGainArea = bounds.removeFromLeft(bounds.getWidth() * 0.125);
+    auto inputGainTitleArea = inputGainArea.removeFromTop(20);
+    
+    inGainLabel.setBounds(inputGainTitleArea);
     inputGainSlider.setBounds(inputGainArea);
+    
+    auto compressorArea = bounds.removeFromLeft(bounds.getWidth() * 0.28);
+    auto compressorTitleArea = compressorArea.removeFromTop(20);
+    auto compressorResponseArea = compressorArea.removeFromTop(compressorArea.getHeight() * 0.5);
+    
+    compSectionLabel.setBounds(compressorTitleArea);
+    compressorResponseComponent.setBounds(compressorResponseArea);
+    
+    auto filterArea = bounds.removeFromLeft(bounds.getWidth() * 0.8);
     
     // Compressor Layout
     auto compBypassArea = compressorArea.removeFromBottom(compressorArea.getHeight() * 0.2);
@@ -91,10 +116,23 @@ void FreshwaterAudioProcessorEditor::resized()
     compBypassButton.setBounds(compBypassArea);
     
     // Filter Layout
-    auto SpectrumResponseArea = filterArea.removeFromTop(filterArea.getHeight() * 0.5);
+    auto spectrumResponseArea = filterArea.removeFromTop(filterArea.getHeight() * 0.5);
+    auto eqTitleArea = spectrumResponseArea.removeFromTop(20);
+    
+    equalizerSectionLabel.setBounds(eqTitleArea);
+    responseCurveComponent.setBounds(spectrumResponseArea);
+    
     auto lowFilterArea = filterArea.removeFromLeft(filterArea.getWidth() * 0.33);
     auto midFilterArea = filterArea.removeFromLeft(filterArea.getWidth() * 0.5);
     auto highFilterArea = filterArea;
+    
+    auto lowFilterTitleArea = lowFilterArea.removeFromTop(20);
+    auto midFilterTitleArea = midFilterArea.removeFromTop(20);
+    auto highFilterTitleArea = highFilterArea.removeFromTop(20);
+    
+    lowFilterSectionLabel.setBounds(lowFilterTitleArea);
+    midFilterSectionLabel.setBounds(midFilterTitleArea);
+    highFilterSectionLabel.setBounds(highFilterTitleArea);
     
     // Low Filter
     auto lowFreqArea = lowFilterArea.removeFromTop(lowFilterArea.getHeight() * 0.33);
@@ -126,6 +164,7 @@ void FreshwaterAudioProcessorEditor::resized()
     highBypassButton.setBounds(highBypassArea);
     
     // Output Gain
+    outGainLabel.setBounds(bounds.removeFromTop(20));
     outputGainSlider.setBounds(bounds);
     
 }
@@ -151,7 +190,9 @@ std::vector<juce::Component*> FreshwaterAudioProcessorEditor::getComps()
         &compAttackSlider,
         &compReleaseSlider,
         &compThresholdSlider,
-        &compRatioSlider
+        &compRatioSlider,
+        &responseCurveComponent,
+        &compressorResponseComponent
     };
 }
 
@@ -182,4 +223,36 @@ std::vector<juce::Slider*> FreshwaterAudioProcessorEditor::getCompFilterSliders(
         &compThresholdSlider,
         &compRatioSlider
     };
+}
+
+
+void FreshwaterAudioProcessorEditor::initializeSectionLabels()
+{
+    initializeLabel(nameLabel, "FreshWater Bass Amp", 25.0f);
+    initializeLabel(inGainLabel, "Input Gain", 16.0f);
+    initializeLabel(compSectionLabel, "Compressor", 16.0f);
+    
+    initializeLabel(compAttackLabel, "Attack", 16.0f);
+    compAttackLabel.attachToComponent(&compAttackSlider, false);
+    initializeLabel(compReleaseLabel, "Release", 16.0f);
+    compReleaseLabel.attachToComponent(&compReleaseSlider, false);
+    initializeLabel(compThresholdLabel, "Threshold", 16.0f);
+    compThresholdLabel.attachToComponent(&compThresholdSlider, false);
+    initializeLabel(compRatioLabel, "Ratio", 16.0f);
+    compRatioLabel.attachToComponent(&compRatioSlider, false);
+    
+    initializeLabel(equalizerSectionLabel, "Equalizer", 16.0f);
+    initializeLabel(lowFilterSectionLabel, "Bass", 16.0f);
+    initializeLabel(midFilterSectionLabel, "Mid", 16.0f);
+    initializeLabel(highFilterSectionLabel, "Treble", 16.0f);
+    initializeLabel(outGainLabel, "Output Gain", 16.0f);
+}
+
+void FreshwaterAudioProcessorEditor::initializeLabel(juce::Label& label, const juce::String labelText, const float textSize)
+{
+    addAndMakeVisible(label);
+    label.setFont (juce::Font (textSize, juce::Font::bold));
+    label.setText (labelText, juce::dontSendNotification);
+    label.setColour (juce::Label::textColourId, juce::Colours::white);
+    label.setJustificationType (juce::Justification::centred);
 }

@@ -13,6 +13,9 @@
 #include "../JuceLibraryCode/JuceHeader.h"
 #include "PluginProcessor.h"
 #include "FilterHelperFunctions.h"
+#include "./GUI/RotarySlider.h"
+#include "./GUI/ResponseCurveComponent.h"
+#include "./GUI/CompressorResponseComponent.h"
 
 //==============================================================================
 /**
@@ -35,13 +38,37 @@ private:
     
     juce::Slider inputGainSlider, outputGainSlider;
     
-    juce::Slider lowFreqSlider, lowOrderSlider;
-    juce::Slider midFreqSlider, midGainSlider, midQualitySlider;
-    juce::Slider highFreqSlider, highOrderSlider;
+    RotarySlider    lowFreqSlider,
+                    lowOrderSlider,
+                    midFreqSlider,
+                    midGainSlider,
+                    midQualitySlider,
+                    highFreqSlider,
+                    highOrderSlider;
     
     juce::ToggleButton compBypassButton, lowBypassButton, midBypassButton, highBypassButton;
     
-    juce::Slider compAttackSlider, compReleaseSlider, compThresholdSlider, compRatioSlider;
+    RotarySlider    compAttackSlider,
+                    compReleaseSlider,
+                    compThresholdSlider,
+                    compRatioSlider;
+    
+    juce::Label nameLabel,
+                inGainLabel,
+                compSectionLabel,
+                compAttackLabel,
+                compReleaseLabel,
+                compThresholdLabel,
+                compRatioLabel,
+                equalizerSectionLabel,
+                lowFilterSectionLabel,
+                midFilterSectionLabel,
+                highFilterSectionLabel,
+                
+                outGainLabel;
+    
+    ResponseCurveComponent responseCurveComponent;
+    CompressorResponseComponent compressorResponseComponent;
     
     using APVTS = juce::AudioProcessorValueTreeState;
     using sliderAttachment = APVTS::SliderAttachment;
@@ -70,6 +97,8 @@ private:
     std::vector<juce::Component*> getComps();
     std::vector<juce::Slider*> getGainSliders();
     std::vector<juce::Slider*> getCompFilterSliders();
+    void initializeSectionLabels();
+    void initializeLabel(juce::Label& label, const juce::String labelText, const float textSize);
 
     
 
