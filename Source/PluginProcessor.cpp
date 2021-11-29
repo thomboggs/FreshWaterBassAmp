@@ -326,10 +326,10 @@ void FreshwaterAudioProcessor::createCompressorParams ( juce::AudioProcessorValu
                                                            0.f));
     
     juce::StringArray strArray;
-    std::vector<double> threshVec = {1.0, 2.0, 3.0, 5.0, 8.0, 13.0, 21.0, 34.0, 55.0, 89.0};
+    std::vector<int> threshVec = {1, 2, 3, 5, 8, 13, 21, 34, 55, 89};
     for (auto thresh : threshVec)
     {
-        strArray.add(juce::String(thresh, 1));
+        strArray.add(juce::String(thresh));
     }
     
     layout.add(std::make_unique<juce::AudioParameterChoice>(getCompRatioParamName(),
