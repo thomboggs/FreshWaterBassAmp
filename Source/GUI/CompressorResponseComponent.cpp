@@ -10,18 +10,46 @@
 
 #include <JuceHeader.h>
 #include "CompressorResponseComponent.h"
+#include "../FilterHelperFunctions.h"
 
 //==============================================================================
-CompressorResponseComponent::CompressorResponseComponent()
+CompressorResponseComponent::CompressorResponseComponent(FreshwaterAudioProcessor& p) :
+ audioProcessor(p)
 {
-    // In your constructor, you should add any child components, and
-    // initialise any special settings that your component needs.
-
+    const auto& params = audioProcessor.getParameters();
+    for ( auto param : params)
+    {
+        param->addListener(this);
+    }
+    
+    startTimerHz(60);
 }
 
 CompressorResponseComponent::~CompressorResponseComponent()
 {
+    const auto& params = audioProcessor.getParameters();
+    for ( auto param : params)
+    {
+        param->removeListener(this);
+    }
 }
+
+
+void CompressorResponseComponent::parameterValueChanged(int parameterIndex, float newValue)
+{
+    parametersChanged.set(true);
+}
+
+
+void CompressorResponseComponent::timerCallback()
+{
+    if (parametersChanged.compareAndSetBool(false, true))
+    {
+        // signal a repaint
+        repaint();
+    }
+}
+
 
 void CompressorResponseComponent::paint (juce::Graphics& g)
 {
@@ -34,24 +62,116 @@ void CompressorResponseComponent::paint (juce::Graphics& g)
 
 //    g.fillAll (getLookAndFeel().findColour (juce::ResizableWindow::backgroundColourId));   // clear the background
 
-    auto r = getLocalBounds();
-    r.reduce(10, 10);
+//    auto r = getLocalBounds();
+//    r.reduce(10, 10);
+//
+//    g.setColour (getLookAndFeel().findColour (juce::ResizableWindow::backgroundColourId));
+//    g.fillRect(r);
+//
+//    g.setColour (juce::Colours::grey);
+//    g.drawRect (r, 1);   // draw an outline around the component
+//
+//    g.setColour (juce::Colours::white);
+//    g.setFont (14.0f);
+//    g.drawText ("CompressorResponseComponent", r,
+//                juce::Justification::centred, true);   // draw some placeholder text
+    using namespace juce;
     
-    g.setColour (getLookAndFeel().findColour (juce::ResizableWindow::backgroundColourId));
-    g.fillRect(r);
+    g.fillAll (Colours::black);
+    g.drawImage(background, getLocalBounds().toFloat());
     
-    g.setColour (juce::Colours::grey);
-    g.drawRect (r, 1);   // draw an outline around the component
-
-    g.setColour (juce::Colours::white);
-    g.setFont (14.0f);
-    g.drawText ("CompressorResponseComponent", r,
-                juce::Justification::centred, true);   // draw some placeholder text
+    auto responseArea = getAnalysisArea();
+    
+    auto w = responseArea.getWidth();
+    
+    std::vector<double> gains;
+    
+    gains.resize(w);
+    
+    for (int i = 0; i < w; ++i)
+    {
+        float threshold {0}, ratio {1};
+        
+        if (auto* p = dynamic_cast<juce::AudioParameterFloat*>(audioProcessor.apvts.getParameter(getCompThresholdParamName())))
+        {
+            threshold = p->get();
+        }
+        if (auto* p = dynamic_cast<juce::AudioParameterChoice*>(audioProcessor.apvts.getParameter(getCompRatioParamName())))
+        {
+            ratio = p->getCurrentChoiceName().getFloatValue();
+        }
+     
+        auto inputGain = jmap ( double(i) / double(w), -60.0, 12.0 );
+        
+        float outputGain;
+        
+        if (inputGain < threshold)
+        {
+            outputGain = inputGain;
+        }
+        else
+        {
+            outputGain = threshold + (inputGain - threshold) / ratio;
+        }
+        
+        gains[i] = outputGain;
+    }
+    
+    Path responseCurve;
+    
+    const double outputMin = responseArea.getBottom();
+    const double outputMax = responseArea.getY();
+    auto map = [outputMin, outputMax] (double input)
+    {
+        return jmap(input, -60.0, 12.0, outputMin, outputMax);
+    };
+    
+    responseCurve.startNewSubPath(responseArea.getX(), map(gains.front()));
+    
+    for ( size_t i = 1; i < gains.size(); ++i)
+    {
+        responseCurve.lineTo(responseArea.getX() + i, map(gains[i]));
+    }
+    
+    g.setColour(Colours::orange);
+    g.drawRoundedRectangle(getRenderArea().toFloat(), 4.f, 1.f);
+    
+    g.setColour(Colours::white);
+    g.strokePath(responseCurve, PathStrokeType(2.f));
+    
 }
 
 void CompressorResponseComponent::resized()
 {
     // This method is where you should set the bounds of any child
     // components that your component contains..
+
+}
+
+
+juce::Rectangle<int> CompressorResponseComponent::getRenderArea()
+{
+    auto bounds = getLocalBounds();
+
+//    bounds.reduce(10, //JUCE_LIVE_CONSTANT(5),
+//                  8 //JUCE_LIVE_CONSTANT(5)
+//                  );
+    bounds.removeFromTop(12);
+    bounds.removeFromBottom(2);
+    bounds.removeFromLeft(20);
+    bounds.removeFromRight(20);
+
+    return bounds;
+}
+
+
+juce::Rectangle<int> CompressorResponseComponent::getAnalysisArea()
+{
+    auto bounds = getRenderArea();
+
+    bounds.removeFromTop(4);
+    bounds.removeFromBottom(4);
+
+    return bounds;
 
 }

@@ -29,6 +29,7 @@ FreshwaterAudioProcessorEditor::FreshwaterAudioProcessorEditor (FreshwaterAudioP
 , compThresholdSlider(*processor.apvts.getParameter(getCompThresholdParamName()), "dB")
 , compRatioSlider(*processor.apvts.getParameter(getCompRatioParamName()), "")
 , responseCurveComponent(processor)
+, compressorResponseComponent(processor)
 , inputGainSliderAttachment(processor.apvts, getInputGainParamName(), inputGainSlider)
 , outputGainSliderAttachment(processor.apvts, getOutputGainParamName(), outputGainSlider)
 , lowFreqSliderAttachment(processor.apvts, getFreqParamName(0), lowFreqSlider)

@@ -19,7 +19,7 @@
 /*
 */
 class ResponseCurveComponent  : public  juce::Component, juce::AudioProcessorParameter::Listener,
-juce::Timer
+    juce::Timer
 {
 public:
     ResponseCurveComponent(FreshwaterAudioProcessor&);
