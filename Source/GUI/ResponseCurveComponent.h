@@ -38,7 +38,7 @@ public:
 
 private:
     FreshwaterAudioProcessor& audioProcessor;
-    juce::Atomic<bool> parametersChanged { false };
+    juce::Atomic<bool> parametersChanged { true };
     
     using Filter = juce::dsp::IIR::Filter<float>;
 //    using CoefficientsPtr = juce::dsp::IIR::Filter<float>::CoefficientsPtr;
