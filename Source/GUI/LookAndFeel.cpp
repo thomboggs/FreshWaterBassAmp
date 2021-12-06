@@ -10,6 +10,7 @@
 
 #include "LookAndFeel.h"
 #include "RotarySlider.h"
+#include "BypassButton.h"
 
 void LookAndFeel::drawRotarySlider (juce::Graphics& g,
                                     int x, int y, int width, int height,
@@ -61,7 +62,7 @@ void LookAndFeel::drawRotarySlider (juce::Graphics& g,
         rec.setSize(strWidth + 4, rs->getTextHeight() + 2);
         rec.setCentre(bounds.getCentre());
         
-        g.setColour(Colours::black);
+        g.setColour(Colour(uint8(0),uint8(0), uint8(0), uint8(120)));
         g.fillRect(rec);
         
         g.setColour(Colours::white);
@@ -78,4 +79,42 @@ void LookAndFeel::drawLinearSlider (juce::Graphics&, int x, int y, int width, in
                        juce::Slider&)
 {
     
+}
+
+
+void LookAndFeel::drawToggleButton(juce::Graphics &g, juce::ToggleButton &toggleButton, bool shouldDrawButtonAsHighlighted, bool shouldDrawButtonAsDown)
+{
+    using namespace juce;
+    
+    if ( auto* bb = dynamic_cast<BypassButton*>(&toggleButton) )
+    {
+        Path bypassButton;
+        
+        auto bounds = toggleButton.getLocalBounds();
+        auto size = jmin(bounds.getWidth(), bounds.getHeight()) - 7; //JUCE_LIVE_CONSTANT(7);
+        auto r = bounds.withSizeKeepingCentre(size, size);
+        
+        float ang = 30.f; //JUCE_LIVE_CONSTANT(30); // 30.f
+        
+        size -= 7; //JUCE_LIVE_CONSTANT(7);
+        
+        bypassButton.addCentredArc(r.getCentreX(),
+                                  r.getCentreY(),
+                                  size * 0.5f,
+                                  size * 0.5f,
+                                  0.f,
+                                  degreesToRadians(ang),
+                                  degreesToRadians(360 - ang),
+                                  true);
+        bypassButton.startNewSubPath(r.getCentreX(), r.getY());
+        bypassButton.lineTo(r.getCentre().toFloat());
+        
+        PathStrokeType pst(2.f, PathStrokeType::JointStyle::curved);
+
+        auto color = toggleButton.getToggleState() ? Colours::dimgrey : Colours::lightskyblue ;
+        
+        g.setColour(color);
+        g.strokePath(bypassButton, pst);
+        g.drawEllipse(r.toFloat(), 2.f);
+    }
 }
