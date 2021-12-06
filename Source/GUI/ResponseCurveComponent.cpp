@@ -95,7 +95,7 @@ void ResponseCurveComponent::updateChain()
     auto filter1 = updateFilter(1);
     auto filter2 = updateFilter(2);
 //    auto chainSettings = getChainSettings(audioProcessor.apvts);
-    
+//    DBG(filter0.filterType);
 //    monoChain.setBypassed<ChainPositions::Peak>(chainSettings.peakBypass);
     chain.setBypassed<0>(filter0.bypassed);
     auto filter0Coeff = CoefficientsMaker<float>::calcCoefficients(filter0);
@@ -129,30 +129,6 @@ void ResponseCurveComponent::updateChain()
 
 void ResponseCurveComponent::paint (juce::Graphics& g)
 {
-    /* This demo code just fills the component's background and
-       draws some placeholder text to get you started.
-
-       You should replace everything in this method with your own
-       drawing code..
-    */
-
-//    g.fillAll (getLookAndFeel().findColour (juce::ResizableWindow::backgroundColourId));   // clear the background
-
-//    auto r = getLocalBounds();
-//    r.reduce(10, 10);
-//    
-//    g.setColour (getLookAndFeel().findColour (juce::ResizableWindow::backgroundColourId));
-//    g.fillRect(r);
-//    
-//    g.setColour (juce::Colours::grey);
-//    g.drawRect (r, 1);   // draw an outline around the component
-//    
-//
-//    g.setColour (juce::Colours::white);
-//    g.setFont (14.0f);
-//    g.drawText ("ResponseCurveComponent", r,
-//                juce::Justification::centred, true);   // draw some placeholder text
-    
     using namespace juce;
     // (Our component is opaque, so we must completely fill the background with a solid colour)
     g.fillAll (Colours::black);
@@ -205,7 +181,7 @@ void ResponseCurveComponent::paint (juce::Graphics& g)
         responseCurve.lineTo(responseArea.getX() + i, map(mags[i]));
     }
     
-    g.setColour(Colours::orange);
+    g.setColour(Colours::lightskyblue);
     g.drawRoundedRectangle(getRenderArea().toFloat(), 4.f, 1.f);
     
     g.setColour(Colours::white);
@@ -258,12 +234,10 @@ void ResponseCurveComponent::resized()
     for ( auto gain : gains )
     {
         auto y = jmap(gain, -24.f, 24.f, float(bottom), float(top));
-//        g.drawHorizontalLine(y, 0, getWidth());
         g.setColour(gain == 0.f ? Colour(0u, 172u, 1u) : Colours::darkgrey);
         g.drawHorizontalLine(y, float(left), float(right));
     }
-     
-//    g.drawRect(getAnalysisArea());
+    
     g.setColour(Colours::lightgrey);
     const int fontHeight = 10;
     g.setFont(fontHeight);
@@ -304,7 +278,6 @@ void ResponseCurveComponent::resized()
         if (gain > 0)
             str << "+";
         str << gain;
-//        str << "dB";
         
         auto textWidth = g.getCurrentFont().getStringWidth(str);
         
@@ -320,19 +293,11 @@ void ResponseCurveComponent::resized()
         g.setColour(gain == 0.f ? Colour(0u, 172u, 1u) : Colours::lightgrey);
         
         g.drawFittedText(str, r, juce::Justification::centred, 1);
-//        r.setCentre(getRenderArea().getRight() + 10, y);
-//        g.drawFittedText(str, r, juce::Justification::centred, 1);
-        
-        str.clear();
-        str << (gain - 24.f);
         
         r.setX(1);
         textWidth = g.getCurrentFont().getStringWidth(str);
         r.setSize(textWidth, fontHeight);
-        g.setColour(Colours::lightgrey);
         g.drawFittedText(str, r, juce::Justification::centred, 1);
-        
-            
     }
 
 }
