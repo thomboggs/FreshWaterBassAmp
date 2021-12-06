@@ -88,33 +88,43 @@ void CompressorResponseComponent::paint (juce::Graphics& g)
     
     gains.resize(w);
     
+    float threshold {0}, ratio {1};
+    bool bypassed {false};
+    
+    if (auto* p = dynamic_cast<juce::AudioParameterBool*>(audioProcessor.apvts.getParameter(getCompBypassParamName())))
+    {
+        bypassed = p->get();
+    }
+    
+    if (auto* p = dynamic_cast<juce::AudioParameterFloat*>(audioProcessor.apvts.getParameter(getCompThresholdParamName())))
+    {
+        threshold = p->get();
+    }
+    
+    if (auto* p = dynamic_cast<juce::AudioParameterChoice*>(audioProcessor.apvts.getParameter(getCompRatioParamName())))
+    {
+        ratio = p->getCurrentChoiceName().getFloatValue();
+    }
+    
     for (int i = 0; i < w; ++i)
     {
-        float threshold {0}, ratio {1};
-        
-        if (auto* p = dynamic_cast<juce::AudioParameterFloat*>(audioProcessor.apvts.getParameter(getCompThresholdParamName())))
-        {
-            threshold = p->get();
-        }
-        if (auto* p = dynamic_cast<juce::AudioParameterChoice*>(audioProcessor.apvts.getParameter(getCompRatioParamName())))
-        {
-            ratio = p->getCurrentChoiceName().getFloatValue();
-        }
-     
         auto inputGain = jmap ( double(i) / double(w), -60.0, 12.0 );
         
-        float outputGain;
-        
-        if (inputGain < threshold)
+        if (!bypassed)
         {
-            outputGain = inputGain;
+            if (inputGain < threshold)
+            {
+                gains[i] = inputGain;
+            }
+            else
+            {
+                gains[i] = threshold + (inputGain - threshold) / ratio;
+            }
         }
         else
         {
-            outputGain = threshold + (inputGain - threshold) / ratio;
+            gains[i] = inputGain;
         }
-        
-        gains[i] = outputGain;
     }
     
     Path responseCurve;

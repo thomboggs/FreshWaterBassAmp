@@ -48,7 +48,7 @@ private:
                     highGainSlider,
                     highQualitySlider;
     
-    juce::ToggleButton compBypassButton, lowBypassButton, midBypassButton, highBypassButton;
+    BypassButton compBypassButton, lowBypassButton, midBypassButton, highBypassButton;
     
     RotarySlider    compAttackSlider,
                     compReleaseSlider,
