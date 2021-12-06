@@ -80,16 +80,6 @@ private:
     
     void attachCompressorGainParams ();
     
-//    enum FilterPosition
-//    {
-//        LowCut,
-//        Multi1,
-//        HighCut
-//    };
-//    
-//    HighCutLowCutParameters currentLowCutParams, currentHighCutParams;
-//    FilterParameters currentFilterParams;
-    
     using Filter = juce::dsp::IIR::Filter<float>;
     using CoefficientsPtr = juce::dsp::IIR::Filter<float>::CoefficientsPtr;
     
@@ -144,6 +134,8 @@ ParamType FreshwaterAudioProcessor::getParams (const int bandNum, const double s
     {
         if (auto* p = dynamic_cast<juce::AudioParameterChoice*>(apvts.getParameter(getTypeParamName(bandNum))))
         {
+//            DBG("getParams filtertype");
+//            DBG(bandNum);
             switch (bandNum)
             {
                 case 0:

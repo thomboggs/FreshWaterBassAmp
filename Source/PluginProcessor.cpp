@@ -28,21 +28,8 @@ FreshwaterAudioProcessor::FreshwaterAudioProcessor()
 #endif
 {
     attachCompressorGainParams();
-//    auto floatHelper = [&apvts = this->apvts](auto& param, const auto& paramName)
-//    {
-//        param = dynamic_cast<juce::AudioParameterFloat*>(apvts.getParameter(paramName));
-//        jassert(param != nullptr);
-//    };
-//
-//    floatHelper(compressor.attack, getCompAttackParamName());
-//    floatHelper(compressor.release, getCompReleaseParamName());
-//    floatHelper(compressor.threshold, getCompThresholdParamName());
-//
-//    compressor.ratio = dynamic_cast<juce::AudioParameterChoice*>(apvts.getParameter(getCompRatioParamName()));
-//    jassert(compressor.ratio != nullptr);
-//
-//    compressor.bypassed = dynamic_cast<juce::AudioParameterBool*>(apvts.getParameter(getCompBypassParamName()));
-//    jassert(compressor.bypassed != nullptr);
+    
+    
 }
 
 FreshwaterAudioProcessor::~FreshwaterAudioProcessor()

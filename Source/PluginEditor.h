@@ -16,6 +16,7 @@
 #include "./GUI/RotarySlider.h"
 #include "./GUI/ResponseCurveComponent.h"
 #include "./GUI/CompressorResponseComponent.h"
+#include "./GUI/BypassButton.h"
 
 //==============================================================================
 /**
