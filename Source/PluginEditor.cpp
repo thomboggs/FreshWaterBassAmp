@@ -64,6 +64,7 @@ FreshwaterAudioProcessorEditor::FreshwaterAudioProcessorEditor (FreshwaterAudioP
     for ( auto slider : getGainSliders() )
     {
         slider->setSliderStyle(juce::Slider::SliderStyle::LinearBarVertical);
+//        slider->getLookAndFeel().setColour(juce::Slider::trackColourId, juce::Colours::forestgreen);
     }
     
     for ( auto slider : getCompFilterSliders() )
@@ -84,8 +85,6 @@ void FreshwaterAudioProcessorEditor::paint (juce::Graphics& g)
 {
     // (Our component is opaque, so we must completely fill the background with a solid colour)
     g.fillAll (juce::Colour(3, 45, 184));
-
-    
 }
 
 void FreshwaterAudioProcessorEditor::resized()
@@ -124,8 +123,8 @@ void FreshwaterAudioProcessorEditor::resized()
     compBypassButton.setBounds(compBypassArea);
     
     // Filter Layout
+    auto eqTitleArea = filterArea.removeFromTop(20);
     auto spectrumResponseArea = filterArea.removeFromTop(filterArea.getHeight() * 0.5);
-    auto eqTitleArea = spectrumResponseArea.removeFromTop(20);
     
     equalizerSectionLabel.setBounds(eqTitleArea);
     responseCurveComponent.setBounds(spectrumResponseArea);
