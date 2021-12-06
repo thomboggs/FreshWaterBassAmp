@@ -143,7 +143,7 @@ void CompressorResponseComponent::paint (juce::Graphics& g)
         responseCurve.lineTo(responseArea.getX() + i, map(gains[i]));
     }
     
-    g.setColour(Colours::orange);
+    g.setColour(Colours::lightskyblue);
     g.drawRoundedRectangle(getRenderArea().toFloat(), 4.f, 1.f);
     
     g.setColour(Colours::white);
@@ -153,9 +153,78 @@ void CompressorResponseComponent::paint (juce::Graphics& g)
 
 void CompressorResponseComponent::resized()
 {
-    // This method is where you should set the bounds of any child
-    // components that your component contains..
-
+    using namespace juce;
+    
+    background = Image(Image::PixelFormat::RGB, getWidth(), getHeight(), true);
+    
+    Graphics g(background);
+    
+    Array<float> levels
+    {
+        -60, -48, -36, -24, -12,
+        -6, 0, 6, 12
+    };
+    
+    auto renderArea = getAnalysisArea();
+    auto left = renderArea.getX();
+    auto right = renderArea.getRight();
+    auto top = renderArea.getY();
+    auto bottom = renderArea.getBottom();
+    auto width = renderArea.getWidth();
+    auto height = renderArea.getHeight();
+    
+    Array<float> xs, ys;
+    for ( auto level : levels)
+    {
+        auto normLevel = jmap(level, -60.f, 12.f, 0.f, 1.f);
+        xs.add(left + width * normLevel);
+        
+        ys.add(bottom - height * normLevel);
+    }
+    
+    // Draw Grid
+    g.setColour(Colours::dimgrey);
+    for (auto x : xs )
+    {
+        g.drawVerticalLine(x, top, bottom);
+    }
+    
+    for ( auto y : ys )
+    {
+        g.drawHorizontalLine(y, float(left), float(right));
+    }
+    
+    // Draw Text
+    g.setColour(Colours::lightgrey);
+    const int fontHeight = 10;
+    g.setFont(fontHeight);
+    
+    for (int i = 0; i < levels.size(); ++i)
+    {
+        auto l = levels[i];
+        auto x = xs[i];
+        auto y = ys[i];
+        
+        String str;
+        if (l > 0)
+            str << "+";
+        str << l;
+        
+        auto textWidth = g.getCurrentFont().getStringWidth(str);
+        
+        //
+        Rectangle<int> r;
+        r.setSize(textWidth, fontHeight);
+        r.setCentre(x, 0);
+        r.setY(bottom+5);
+        
+        g.drawFittedText(str, r, juce::Justification::centred, 1);
+        
+        r.setCentre(r.getCentreX(), y);
+        r.setX(1);
+        g.drawFittedText(str, r, juce::Justification::centred, 1);
+    }
+    
 }
 
 
@@ -166,8 +235,8 @@ juce::Rectangle<int> CompressorResponseComponent::getRenderArea()
 //    bounds.reduce(10, //JUCE_LIVE_CONSTANT(5),
 //                  8 //JUCE_LIVE_CONSTANT(5)
 //                  );
-    bounds.removeFromTop(12);
-    bounds.removeFromBottom(2);
+    bounds.removeFromTop(2);
+    bounds.removeFromBottom(12);
     bounds.removeFromLeft(20);
     bounds.removeFromRight(20);
 
