@@ -1,6 +1,7 @@
 # FreshWaterBassAmp
 [IN PROGRESS] Bass Preamp/Effects plugin to be used for DI bass guitar
 
+Build by loading the `.jucer` file in the JUCE Projucer
 
 To do:
 - Cleaned up filter structure
